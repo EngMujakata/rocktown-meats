@@ -846,7 +846,7 @@
   const ACCOUNTS_API_ENDPOINT = "https://script.google.com/macros/s/AKfycbwNH08Lc7N1PLcohrKY8reoL5RDZYD3AUE0eApuNeILQ0-1sPDf5B6eS_-BuQWxfvEl/exec";
   const DB_NAME = 'new_spark_rtm';
   const DB_VERSION = 1;
-  const ZWG_RATE = 45; // Hardcoded ZWG rate (USD * 45)
+  const ZWG_RATE = 38; // Hardcoded ZWG rate (USD * 45)
 
   // ============================================================================
   // GLOBAL STATE
@@ -1692,7 +1692,7 @@
       <div class="receipt-total">Total: ${getCurrencySymbol()}${displayTotal.toFixed(2)}</div>
       <div class="receipt-info">Cash Received: ${getCurrencySymbol()}${displayCashReceived.toFixed(2)}</div>
       <div class="receipt-info">Change: ${getCurrencySymbol()}${displayChange.toFixed(2)}</div>
-      ${sale.currency === 'ZWG' ? `<div class="receipt-info" style="font-size:9px;">Rate: 1 USD = ${ZWG_RATE} ZWG</div>` : ''}
+      ${sale.currency === 'ZWG' ? `<div class="receipt-info" style="font-size:9px;">ZWG RECEIPT</div>` : ''}
       <div class="receipt-footer">Thank you!</div>
     `;
     receiptDiv.classList.add('show');
