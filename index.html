@@ -1,0 +1,1500 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#003366">
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="logo.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <title>Dode Elia Enterprises | Professional POS System</title>
+  <style>
+    :root {
+      --primary: #0a2540;
+      --primary-light: #1a3a5c;
+      --secondary: #2c7a4d;
+      --danger: #c62828;
+      --warning: #ed6c02;
+      --light: #f8f9fa;
+      --dark: #1e293b;
+      --gray: #64748b;
+      --gray-light: #e2e8f0;
+      --border-radius: 0.5rem;
+      --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
+      --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.1);
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background-color: #f1f5f9;
+      color: var(--dark);
+      line-height: 1.5;
+      min-height: 100vh;
+    }
+    .login-container {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      padding: 1.5rem;
+      background: linear-gradient(135deg, var(--primary) 0%, #1a4a7a 100%);
+    }
+    .login-card {
+      width: 100%;
+      max-width: 420px;
+      background: white;
+      border-radius: 1.25rem;
+      box-shadow: var(--shadow-md);
+      padding: 2rem;
+    }
+    .login-header { text-align: center; margin-bottom: 2rem; }
+    .login-logo {
+      width: 72px;
+      height: 72px;
+      margin: 0 auto 1rem;
+      background: var(--primary);
+      border-radius: 1rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 1.75rem;
+      font-weight: 700;
+    }
+    .login-title { font-size: 1.5rem; font-weight: 600; color: var(--dark); margin-bottom: 0.25rem; }
+    .login-subtitle { color: var(--gray); font-size: 0.875rem; }
+    .form-group { margin-bottom: 1.25rem; }
+    label { display: block; margin-bottom: 0.5rem; font-weight: 500; font-size: 0.875rem; color: var(--dark); }
+    input, select, textarea {
+      width: 100%;
+      padding: 0.75rem;
+      border: 1.5px solid var(--gray-light);
+      border-radius: var(--border-radius);
+      font-size: 0.9375rem;
+      transition: all 0.2s;
+      background: white;
+      font-family: inherit;
+    }
+    input:focus, select:focus, textarea:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(10,37,64,0.1);
+    }
+    .btn {
+      padding: 0.75rem 1.25rem;
+      border: none;
+      border-radius: var(--border-radius);
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-size: 0.9375rem;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+    }
+    .btn-primary { background-color: var(--primary); color: white; }
+    .btn-primary:hover { background-color: var(--primary-light); transform: translateY(-1px); }
+    .btn-danger { background-color: var(--danger); color: white; }
+    .btn-success { background-color: var(--secondary); color: white; }
+    .btn-warning { background-color: var(--warning); color: white; }
+    .btn-outline { background: transparent; border: 1.5px solid var(--primary); color: var(--primary); }
+    .btn-outline:hover { background: var(--primary); color: white; }
+    .btn:disabled { opacity: 0.6; cursor: not-allowed; }
+    #appContainer { display: none; min-height: 100vh; position: relative; }
+    header {
+      background: var(--primary);
+      color: white;
+      padding: 0.875rem 1.5rem;
+      box-shadow: var(--shadow-sm);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .header-logo span { font-weight: 600; font-size: 1.1rem; }
+    .user-info { display: flex; align-items: center; gap: 0.75rem; }
+    .avatar {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+    }
+    .logout-btn, .report-btn, .cashup-btn {
+      padding: 0.4rem 0.875rem;
+      background-color: rgba(255,255,255,0.15);
+      color: white;
+      border: 1px solid rgba(255,255,255,0.3);
+      border-radius: var(--border-radius);
+      cursor: pointer;
+      font-weight: 500;
+      font-size: 0.8125rem;
+    }
+    .container {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.5rem;
+      padding: 1.5rem;
+      margin-bottom: 80px;
+    }
+    @media (max-width: 768px) { .container { grid-template-columns: 1fr; gap: 1rem; padding: 1rem; } }
+    .card {
+      background: white;
+      border-radius: 1rem;
+      box-shadow: var(--shadow-sm);
+      overflow: hidden;
+    }
+    .card-header {
+      padding: 1rem 1.25rem;
+      border-bottom: 1px solid var(--gray-light);
+      background: #fafcfd;
+    }
+    .card-title { font-size: 1rem; font-weight: 600; color: var(--primary); letter-spacing: -0.01em; }
+    .card-body { padding: 1.25rem; }
+    .form-row { margin-bottom: 1rem; }
+    .form-row-inline { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+    .add-item-btn { width: 100%; margin-top: 0.5rem; }
+    .customer-section {
+      margin-top: 1rem;
+      padding-top: 1rem;
+      border-top: 1px solid var(--gray-light);
+    }
+    .customer-section h4 { font-size: 0.875rem; font-weight: 600; color: var(--primary); margin-bottom: 1rem; }
+    .selector-group { display: flex; gap: 0.75rem; margin-bottom: 1rem; }
+    .selector-btn {
+      flex: 1;
+      padding: 0.6rem;
+      border: 1.5px solid var(--gray-light);
+      background: white;
+      border-radius: var(--border-radius);
+      font-weight: 500;
+      cursor: pointer;
+      font-size: 0.875rem;
+    }
+    .selector-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
+    .cart-items { max-height: 280px; overflow-y: auto; margin: 1rem 0; }
+    .cart-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.75rem 0;
+      border-bottom: 1px solid var(--gray-light);
+    }
+    .cart-item-details { flex: 1; }
+    .cart-item-name { font-weight: 500; font-size: 0.875rem; margin-bottom: 0.25rem; }
+    .cart-item-meta { font-size: 0.75rem; color: var(--gray); }
+    .delete-btn {
+      width: 32px;
+      height: 32px;
+      border: none;
+      background: #fee2e2;
+      border-radius: 50%;
+      cursor: pointer;
+      color: var(--danger);
+    }
+    .cart-item-total { font-weight: 600; color: var(--primary); margin-left: 1rem; font-size: 0.875rem; }
+    .cart-total { font-size: 1.25rem; font-weight: 700; padding-top: 1rem; border-top: 2px solid var(--primary); text-align: right; color: var(--primary); }
+    .vat-breakdown { font-size: 0.8rem; margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px dashed var(--gray-light); }
+    .vat-row { display: flex; justify-content: space-between; margin: 0.25rem 0; }
+    .target-tracker {
+      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+      color: white;
+      padding: 1rem;
+      border-radius: 0.75rem;
+      margin-bottom: 1.25rem;
+    }
+    .target-header { display: flex; justify-content: space-between; margin-bottom: 0.75rem; font-size: 0.875rem; }
+    .target-progress-bar { height: 8px; background: rgba(255,255,255,0.25); border-radius: 4px; overflow: hidden; }
+    .target-progress-fill { height: 100%; background: var(--secondary); border-radius: 4px; transition: width 0.3s ease; }
+    .reports-panel {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: #f1f5f9;
+      z-index: 200;
+      overflow-y: auto;
+      display: none;
+    }
+    .reports-panel.show { display: block; }
+    .reports-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1rem 1.5rem;
+      background: white;
+      border-bottom: 1px solid var(--gray-light);
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+    .filter-bar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      padding: 0.5rem 1rem;
+      background: white;
+      border-bottom: 1px solid var(--gray-light);
+    }
+    .filter-bar input, .filter-bar select { width: auto; min-width: 120px; }
+    .sales-table-container {
+      background: white;
+      margin: 1rem;
+      border-radius: 0.75rem;
+      overflow-x: auto;
+    }
+    .sales-table { width: 100%; border-collapse: collapse; font-size: 0.8125rem; cursor: pointer; }
+    .sales-table th { background: var(--primary); color: white; padding: 0.75rem; text-align: left; font-weight: 500; }
+    .sales-table td { padding: 0.75rem; border-bottom: 1px solid var(--gray-light); }
+    .sales-table tr:hover { background: #f1f5f9; }
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 1000;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0,0,0,0.5);
+      align-items: center;
+      justify-content: center;
+    }
+    .modal.show, .modal.active { display: flex; }
+    .modal-content {
+      background: white;
+      border-radius: 1rem;
+      width: 90%;
+      max-width: 600px;
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+    .modal-header { padding: 1.25rem; border-bottom: 1px solid var(--gray-light); }
+    .modal-body { padding: 1.25rem; }
+    .modal-footer { padding: 1.25rem; border-top: 1px solid var(--gray-light); display: flex; gap: 0.75rem; justify-content: flex-end; }
+    .close { position: absolute; right: 1.25rem; top: 1.25rem; font-size: 1.5rem; cursor: pointer; color: var(--gray); }
+    .keypad-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 0.75rem; margin: 1rem 0; }
+    .keypad-btn {
+      padding: 1rem;
+      font-size: 1.25rem;
+      font-weight: 600;
+      border: none;
+      border-radius: 0.75rem;
+      background: var(--primary);
+      color: white;
+      cursor: pointer;
+    }
+    .keypad-btn:active { transform: scale(0.96); }
+    .keypad-btn.clear { background: var(--danger); }
+    .keypad-btn.enter { background: var(--secondary); grid-column: span 2; }
+    .quantity-display-large {
+      font-size: 2rem;
+      font-weight: 700;
+      text-align: center;
+      padding: 1rem;
+      background: var(--gray-light);
+      border-radius: 0.75rem;
+      margin-bottom: 1rem;
+      color: var(--primary);
+    }
+    footer {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: white;
+      box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
+      display: flex;
+      justify-content: space-around;
+      padding: 0.5rem 0;
+      z-index: 100;
+    }
+    .footer-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      color: var(--gray);
+      font-size: 0.7rem;
+      padding: 0.5rem;
+      cursor: pointer;
+      border-radius: 0.5rem;
+    }
+    .footer-item.active { color: var(--primary); background: rgba(10,37,64,0.08); }
+    .footer-icon { font-size: 1.25rem; margin-bottom: 0.25rem; }
+    .full-block-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.85);
+      z-index: 10000;
+      display: none;
+      align-items: center;
+      justify-content: center;
+    }
+    .full-block-overlay.show { display: flex; }
+    .block-content {
+      background: white;
+      border-radius: 1rem;
+      padding: 2rem;
+      text-align: center;
+      max-width: 350px;
+    }
+    .block-spinner {
+      width: 48px;
+      height: 48px;
+      border: 3px solid var(--gray-light);
+      border-radius: 50%;
+      border-top-color: var(--primary);
+      animation: spin 0.6s linear infinite;
+      margin: 0 auto 1.5rem;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .offline-indicator {
+      position: fixed;
+      bottom: 80px;
+      right: 1rem;
+      background: var(--danger);
+      color: white;
+      padding: 0.5rem 1rem;
+      border-radius: 2rem;
+      font-size: 0.75rem;
+      z-index: 1000;
+      display: none;
+    }
+    .error-msg { color: var(--danger); font-size: 0.875rem; margin-top: 0.5rem; display: none; text-align: center; }
+    .variance-positive { color: var(--secondary); }
+    .variance-negative { color: var(--danger); }
+    hr { margin: 1rem 0; border: none; border-top: 1px solid var(--gray-light); }
+    .queue-status-indicator { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 5px; }
+    .queue-pending { background: var(--warning); }
+    .queue-processing { background: var(--primary); animation: pulse 1s infinite; }
+    .queue-complete { background: var(--secondary); }
+    .queue-failed { background: var(--danger); }
+    @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.5; } }
+    .fiscal-badge { background: var(--secondary); color: white; padding: 0.25rem 0.5rem; border-radius: 0.25rem; font-size: 0.7rem; margin-left: 0.5rem; }
+    .qr-code { text-align: center; margin: 10px 0; }
+    .qr-code img { max-width: 150px; height: auto; margin: 5px auto; display: block; }
+  </style>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+</head>
+<body>
+  <div id="fullBlockOverlay" class="full-block-overlay"><div class="block-content"><div class="block-spinner"></div><h3 style="margin-bottom:0.5rem;">Processing Transaction</h3><p id="fullBlockMessage">Please wait...</p><p style="font-size:0.75rem;color:var(--danger);margin-top:1rem;">Do not close or refresh</p></div></div>
+
+  <div class="login-container" id="loginContainer">
+    <div class="login-card">
+      <div class="login-header"><div class="login-logo">DE</div><h1 class="login-title">Dode Elia Enterprises</h1><p class="login-subtitle">Professional Point of Sale System</p></div>
+      <form id="loginForm">
+        <div class="form-group"><label>Username</label><input type="text" id="username" required autocomplete="off"></div>
+        <div class="form-group"><label>Password</label><input type="password" id="password" required></div>
+        <p id="error-msg" class="error-msg">Invalid credentials</p>
+        <button type="submit" class="btn btn-primary" style="width:100%;">Login</button>
+      </form>
+      <div id="syncStatus" style="margin-top:1rem;text-align:center;font-size:0.75rem;color:var(--gray);"><i class="fas fa-sync-alt fa-spin"></i> Loading accounts...</div>
+    </div>
+  </div>
+
+  <div id="branchModal" class="modal"><div class="modal-content"><span class="close" onclick="closeModal('branchModal')">&times;</span><div class="modal-header"><h3>Select Branch</h3></div><div class="modal-body"><select id="branchSelect" style="width:100%;"></select></div><div class="modal-footer"><button class="btn btn-primary" onclick="confirmBranch()">Continue</button></div></div></div>
+
+  <div id="reportsPanel" class="reports-panel">
+    <div class="reports-header"><h2 style="font-size:1.25rem;">Sales & Variance Reports</h2><button class="btn btn-outline" onclick="closeReports()">Close</button></div>
+    <div class="tabs" style="display:flex;gap:0.5rem;padding:0.5rem 1rem;background:white;border-bottom:1px solid var(--gray-light);">
+      <button class="tab active" onclick="switchReportTab('sales')">Sales History</button>
+      <button class="tab" onclick="switchReportTab('queues')">Sync & Fiscal Queues</button>
+    </div>
+    <div id="salesHistoryTab">
+      <div class="filter-bar">
+        <input type="date" id="startDate"><input type="date" id="endDate">
+        <select id="cashierFilter"><option value="">All Cashiers</option></select>
+        <button class="btn btn-primary" onclick="applyFilters()">Filter</button>
+        <button class="btn btn-outline" onclick="resetFilters()">Reset</button>
+      </div>
+      <div class="sales-table-container">
+        <table class="sales-table">
+          <thead><tr><th>Receipt No.</th><th>Date</th><th>Cashier</th><th>Customer</th><th>Excl. VAT</th><th>VAT</th><th>Total</th><th>Status</th></tr></thead>
+          <tbody id="salesTableBody"></tbody>
+        </table>
+      </div>
+      <div style="margin:0 1rem 1rem 1rem; padding:1rem; background:white; border-radius:0.75rem;">
+        <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:1rem; text-align:center;">
+          <div><strong style="color:var(--primary);">Total Sales (Excl. VAT)</strong><br><span id="summaryExcl">$0.00</span></div>
+          <div><strong style="color:var(--primary);">Total VAT Collected</strong><br><span id="summaryVat">$0.00</span></div>
+          <div><strong style="color:var(--primary);">Total Revenue</strong><br><span id="summaryIncl">$0.00</span></div>
+        </div>
+      </div>
+    </div>
+    <div id="queuesTab" style="display:none;padding:1rem;">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+        <div class="card"><div class="card-header"><h3><i class="fas fa-cloud-upload-alt"></i> Sync Queue</h3></div><div id="syncQueueList" style="max-height:300px;overflow-y:auto;padding:1rem;"></div><button class="btn btn-primary" onclick="processSyncQueueBlocking()" style="margin:1rem;"><i class="fas fa-sync"></i> Process Sync Queue</button></div>
+        <div class="card"><div class="card-header"><h3><i class="fas fa-receipt"></i> Fiscal Queue</h3></div><div id="fiscalQueueList" style="max-height:300px;overflow-y:auto;padding:1rem;"></div><button class="btn btn-primary" onclick="processFiscalQueueBlocking()" style="margin:1rem;"><i class="fas fa-check-double"></i> Process Fiscal Queue</button><button class="btn btn-warning" onclick="retryAllFailedFiscal()" style="margin:0 1rem 1rem 1rem;"><i class="fas fa-redo"></i> Retry All Failed</button></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="appContainer">
+    <header>
+      <div class="header-logo"><span>Dode Elia Enterprises</span></div>
+      <div class="user-info"><span id="welcomeMessage"></span><div class="avatar" id="userAvatar">A</div><button class="cashup-btn" onclick="openCashup()">Cashup</button><button class="report-btn" id="reportBtn" onclick="openReports()">Reports</button><button class="logout-btn" id="logoutBtn">Logout</button></div>
+    </header>
+    <div class="container">
+      <div class="card">
+        <div class="card-header"><h2 class="card-title">Service Entry</h2></div>
+        <div class="card-body">
+          <div class="form-row"><label>Description of Service</label><input type="text" id="manualDesc" placeholder="e.g., Consulting Services" autocomplete="off"></div>
+          <div class="form-row-inline">
+            <div class="form-row"><label>Cost (Expense)</label><input type="number" id="manualCost" step="0.01" placeholder="0.00"></div>
+            <div class="form-row"><label>Amount Received</label><input type="number" id="manualPrice" step="0.01" placeholder="0.00"></div>
+          </div>
+          <div class="form-row"><label>VAT Rate (%)</label><input type="number" id="manualTax" step="0.01" placeholder="15.5" value="15.5"></div>
+          <button class="btn btn-primary add-item-btn" onclick="addManualItemToCart()"><i class="fas fa-plus"></i> Add to Cart</button>
+          <div class="customer-section"><h4>Customer Information</h4>
+            <div class="form-row"><label>Customer Name <span style="color:var(--danger);">*</span></label><input type="text" id="customerName" value="Walk-in Customer"></div>
+            <div class="form-row-inline">
+              <div class="form-row"><label>TIN Number</label><input type="text" id="customerTin"></div>
+              <div class="form-row"><label>VAT Number</label><input type="text" id="customerVat"></div>
+            </div>
+            <div class="form-row"><label>Address</label><input type="text" id="customerAddress"></div>
+            <div class="form-row-inline">
+              <div class="form-row"><label>Email</label><input type="email" id="customerEmail"></div>
+              <div class="form-row"><label>Phone</label><input type="tel" id="customerPhone"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="target-tracker"><div class="target-header"><span><i class="fas fa-chart-line"></i> Monthly Target: $1,000,000</span><span id="targetPercent">0%</span></div><div class="target-progress-bar"><div class="target-progress-fill" id="targetProgressFill"></div></div></div>
+        <div class="card">
+          <div class="card-header"><h2 class="card-title">Current Invoice</h2></div>
+          <div class="card-body">
+            <div class="selector-group"><button class="selector-btn active" id="btnUSD" onclick="setCurrency('USD')">USD</button><button class="selector-btn" id="btnZWG" onclick="setCurrency('ZWG')">ZWG</button></div>
+            <div class="selector-group"><button class="selector-btn active" id="btnCash" onclick="setPaymentMethod('CASH')">Cash</button><button class="selector-btn" id="btnCard" onclick="setPaymentMethod('CARD')">Card</button></div>
+            <div class="cart-items" id="cart-items"></div>
+            <div class="cart-total" id="cart-total">Total: $0.00</div>
+            <div class="vat-breakdown" id="vatBreakdown"></div>
+            <button class="btn btn-success" onclick="completeSale()" style="width:100%; margin-top:1rem;" id="completeSaleBtn"><i class="fas fa-check-circle"></i> Complete Sale</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <footer>
+      <div class="footer-item active" onclick="switchView('pos')"><i class="fas fa-home footer-icon"></i><span>POS</span></div>
+      <div class="footer-item" onclick="switchView('reports')"><i class="fas fa-chart-bar footer-icon"></i><span>Reports</span></div>
+      <div class="footer-item" onclick="openCashup()"><i class="fas fa-cash-register footer-icon"></i><span>Cashup</span></div>
+    </footer>
+    <div id="offlineIndicator" class="offline-indicator"><i class="fas fa-wifi-slash"></i> Offline Mode</div>
+  </div>
+
+  <div id="cashModal" class="modal"><div class="modal-content"><span class="close" onclick="closeModal('cashModal')">&times;</span><div class="modal-header"><h3>Cash Payment</h3></div><div class="modal-body"><div style="text-align:center;margin-bottom:1rem;"><div style="font-size:0.875rem;">Total Due</div><div id="cashTotalDue" style="font-size:2rem;font-weight:700;color:var(--primary);">$0.00</div></div><div class="quantity-display-large" id="cashReceivedDisplay">0</div><div class="keypad-grid"><button class="keypad-btn" onclick="cashKeypadInput('1')">1</button><button class="keypad-btn" onclick="cashKeypadInput('2')">2</button><button class="keypad-btn" onclick="cashKeypadInput('3')">3</button><button class="keypad-btn" onclick="cashKeypadInput('4')">4</button><button class="keypad-btn" onclick="cashKeypadInput('5')">5</button><button class="keypad-btn" onclick="cashKeypadInput('6')">6</button><button class="keypad-btn" onclick="cashKeypadInput('7')">7</button><button class="keypad-btn" onclick="cashKeypadInput('8')">8</button><button class="keypad-btn" onclick="cashKeypadInput('9')">9</button><button class="keypad-btn clear" onclick="cashKeypadClear()">C</button><button class="keypad-btn" onclick="cashKeypadInput('0')">0</button><button class="keypad-btn" onclick="cashKeypadInput('.')">.</button><button class="keypad-btn enter" onclick="cashKeypadEnter()">Enter</button></div><div id="changeDisplay" style="display:none;text-align:center;padding:0.75rem;background:var(--gray-light);border-radius:0.5rem;"><div>Change</div><div id="changeAmount" style="font-size:1.5rem;font-weight:700;"></div></div></div><div class="modal-footer"><button class="btn btn-danger" onclick="closeModal('cashModal')">Cancel</button><button class="btn btn-success" id="confirmCashBtn" onclick="confirmCashPayment()" disabled>Confirm</button></div></div></div>
+
+  <div id="cashupModal" class="modal"><div class="modal-content"><span class="close" onclick="closeModal('cashupModal')">&times;</span><div class="modal-header"><h3>Cash Up</h3></div><div class="modal-body"><div id="cashupExpected" style="margin-bottom:1rem;padding:0.75rem;background:var(--gray-light);border-radius:0.5rem;">Expected: ****</div><div class="form-row"><label>Cash at Hand</label><input type="number" id="cashAtHandInput" step="0.01" placeholder="0.00"></div><div class="form-row"><label>Bank / Card Settlement</label><input type="number" id="bankInput" step="0.01" placeholder="0.00"></div></div><div class="modal-footer"><button class="btn btn-danger" onclick="closeModal('cashupModal')">Cancel</button><button class="btn btn-success" onclick="completeCashup()">Complete Cashup</button></div></div></div>
+
+  <div id="saleDetailModal" class="modal"><div class="modal-content"><span class="close" onclick="closeModal('saleDetailModal')">&times;</span><div class="modal-header"><h3>Receipt Details</h3></div><div class="modal-body" id="saleDetailBody"></div><div class="modal-footer"><button class="btn btn-primary" onclick="downloadReceiptPDF()">Download PDF</button><button class="btn btn-outline" onclick="closeModal('saleDetailModal')">Close</button></div></div></div>
+
+  <div id="alertModal" class="modal"><div class="modal-content"><div class="modal-header"><h3 id="modalTitle">Notice</h3></div><div class="modal-body"><p id="modalMessage"></p></div><div class="modal-footer"><button class="btn btn-primary" onclick="closeModal('alertModal')">OK</button></div></div></div>
+  <div id="confirmModal" class="modal"><div class="modal-content"><div class="modal-header"><h3 id="confirmTitle">Confirm</h3></div><div class="modal-body"><p id="confirmMessage"></p></div><div class="modal-footer"><button class="btn btn-danger" onclick="confirmCancel()">Cancel</button><button class="btn btn-success" onclick="confirmOK()">Confirm</button></div></div></div>
+
+  <div id="receipt-print" style="display:none;"></div>
+
+  
+
+
+<script>
+    // ============================================================================
+    // CONFIGURATION
+    // ============================================================================
+    const ACCOUNTS_API_ENDPOINT = "https://script.google.com/macros/s/AKfycbwNH08Lc7N1PLcohrKY8reoL5RDZYD3AUE0eApuNeILQ0-1sPDf5B6eS_-BuQWxfvEl/exec";
+    const PRODUCTS_API_ENDPOINT = "https://script.google.com/macros/s/AKfycbwiC_ruUSAhbExaIw60lSYsf8DjWKqu8KLYpjNh52fQshM1Svxuyn6HpF5cKIuCTndc/exec";
+    const FISCAL_API_ENDPOINT = "https://script.google.com/macros/s/AKfycbxXFe94TCmQwg9g59odzgBXtY1emowq3pJqdzVdGJjzJ8B98NOP9mRUwppstjo4jg/exec";
+    const DB_NAME = 'DodeEliaPOS_live';
+    const DB_VERSION = 1;
+    const USD_TO_ZWG_RATE = 32;
+    const SALES_TARGET = 1000000;
+    const DEFAULT_VAT = 15.5;
+    const COMPANY_NAME = "Elia Dode T/A Dode Elia Enterprises";
+    const COMPANY_TIN = "1000223199";
+    const COMPANY_VAT = "220425670";
+    const COMPANY_ADDRESS = "PA Bezel Bridge, Mutare";
+    const COMPANY_PHONE = "0772908777";
+    const COMPANY_EMAIL = "dodeelia1@gmail.com";
+    const STORE_ID = "TS004";
+
+    let db, cart = [], currentUser = null, currentBranch = "Main", displayCurrency = 'USD', selectedPaymentMethod = 'CASH';
+    let cashReceived = 0, changeAmount = 0, isProcessingSale = false;
+    let allSales = [], allCashups = [], currentSaleDetail = null;
+    let confirmResolve = null, cashInputStr = "0", pendingCashResolve = null, pendingCashTotal = 0;
+    let syncQueue = [], fiscalQueue = [], isProcessingSyncQueue = false, isProcessingFiscalQueue = false;
+
+    // ============================================================================
+    // INDEXEDDB
+    // ============================================================================
+    function initIndexedDB() {
+      return new Promise((resolve, reject) => {
+        const req = indexedDB.open(DB_NAME, DB_VERSION);
+        req.onerror = () => reject(req.error);
+        req.onsuccess = () => { db = req.result; resolve(db); };
+        req.onupgradeneeded = (e) => {
+          db = e.target.result;
+          if (!db.objectStoreNames.contains('sales')) db.createObjectStore('sales', { keyPath: 'receipt_no' });
+          if (!db.objectStoreNames.contains('users')) db.createObjectStore('users', { keyPath: 'username' });
+          if (!db.objectStoreNames.contains('cashups')) db.createObjectStore('cashups', { keyPath: 'id', autoIncrement: true });
+          if (!db.objectStoreNames.contains('products')) db.createObjectStore('products', { keyPath: 'code' });
+          if (!db.objectStoreNames.contains('sync_queue')) {
+            const sq = db.createObjectStore('sync_queue', { keyPath: 'receipt_no' });
+            sq.createIndex('type', 'type', { unique: false });
+            sq.createIndex('status', 'status', { unique: false });
+          }
+        };
+      });
+    }
+
+    async function getFromDB(store, key = null) {
+      return new Promise((res, rej) => {
+        const tx = db.transaction(store, 'readonly');
+        const req = key ? tx.objectStore(store).get(key) : tx.objectStore(store).getAll();
+        req.onsuccess = () => res(req.result || (key ? null : []));
+        req.onerror = rej;
+      });
+    }
+
+    async function saveToDB(store, data) {
+      return new Promise((res, rej) => {
+        const tx = db.transaction(store, 'readwrite');
+        const req = tx.objectStore(store).put(data);
+        req.onsuccess = res;
+        req.onerror = rej;
+      });
+    }
+
+    async function deleteFromDB(store, key) {
+      return new Promise((res, rej) => {
+        const tx = db.transaction(store, 'readwrite');
+        const req = tx.objectStore(store).delete(key);
+        req.onsuccess = res;
+        req.onerror = rej;
+      });
+    }
+
+    async function updateSaleStatus(receiptNo, updates) {
+      const sale = await getFromDB('sales', receiptNo);
+      if (sale) {
+        Object.assign(sale, updates);
+        await saveToDB('sales', sale);
+        return sale;
+      }
+      return null;
+    }
+
+    // ============================================================================
+    // QUEUE FUNCTIONS
+    // ============================================================================
+    async function addToSyncQueue(sale) {
+      const queueItem = { receipt_no: sale.receipt_no, type: 'sync', data: sale, status: 'pending', attempts: 0, created: new Date().toISOString() };
+      await saveToDB('sync_queue', queueItem);
+      syncQueue.push(queueItem);
+    }
+
+    async function addToFiscalQueue(sale) {
+      const queueItem = { receipt_no: sale.receipt_no, type: 'fiscal', data: sale, status: 'pending', attempts: 0, created: new Date().toISOString() };
+      await saveToDB('sync_queue', queueItem);
+      fiscalQueue.push(queueItem);
+    }
+
+    async function loadQueues() {
+      const allQueue = await getFromDB('sync_queue');
+      syncQueue = (allQueue || []).filter(q => q.type === 'sync' && q.status !== 'completed');
+      fiscalQueue = (allQueue || []).filter(q => q.type === 'fiscal' && q.status !== 'completed');
+    }
+
+    function renderQueues() {
+      const syncList = document.getElementById('syncQueueList');
+      const fiscalList = document.getElementById('fiscalQueueList');
+      if (syncList) {
+        const pendingSync = syncQueue.filter(q => q.status === 'pending' || q.status === 'failed');
+        syncList.innerHTML = pendingSync.length ? pendingSync.map(q => `<div style="padding:0.5rem;border-bottom:1px solid #e9ecef;"><span class="queue-status-indicator queue-${q.status}"></span><strong>${q.receipt_no}</strong><br><small>Attempts: ${q.attempts||0} | ${q.status}</small>${q.status==='failed'?`<button class="btn btn-outline" style="padding:0.25rem;margin-top:0.25rem;" onclick="retryQueueItem('${q.receipt_no}')">Retry</button>`:''}</div>`).join('') : '<p style="padding:1rem;text-align:center;">No pending items</p>';
+      }
+      if (fiscalList) {
+        const pendingFiscal = fiscalQueue.filter(q => q.status === 'pending' || q.status === 'failed');
+        fiscalList.innerHTML = pendingFiscal.length ? pendingFiscal.map(q => `<div style="padding:0.5rem;border-bottom:1px solid #e9ecef;"><span class="queue-status-indicator queue-${q.status}"></span><strong>${q.receipt_no}</strong><br><small>Attempts: ${q.attempts||0} | ${q.status}</small>${q.last_error?`<br><small style="color:var(--danger);">${q.last_error}</small>`:''}${q.status==='failed'?`<button class="btn btn-outline" style="padding:0.25rem;margin-top:0.25rem;" onclick="retryQueueItem('${q.receipt_no}')">Retry</button>`:''}</div>`).join('') : '<p style="padding:1rem;text-align:center;">No pending items</p>';
+      }
+    }
+
+    async function processSyncQueueBlocking() {
+      if (isProcessingSyncQueue) return;
+      isProcessingSyncQueue = true;
+      blockEverything("Processing sync...", true);
+      try {
+        const pending = syncQueue.filter(q => q.status === 'pending');
+        for (let i = 0; i < pending.length; i++) {
+          const item = pending[i];
+          updateBlockMessage(`Syncing ${i+1}/${pending.length}: ${item.receipt_no}`);
+          try {
+            const success = await syncSaleToCloud(item.data);
+            if (success) {
+              await updateSaleStatus(item.receipt_no, { synced: true });
+              await deleteFromDB('sync_queue', item.receipt_no);
+            } else {
+              item.attempts++;
+              if (item.attempts >= 5) item.status = 'failed';
+              await saveToDB('sync_queue', item);
+            }
+          } catch (e) {
+            item.attempts++;
+            if (item.attempts >= 5) item.status = 'failed';
+            await saveToDB('sync_queue', item);
+          }
+        }
+        await loadQueues(); renderQueues();
+      } finally { unblockEverything(); isProcessingSyncQueue = false; }
+    }
+
+    async function processFiscalQueueBlocking() {
+      if (isProcessingFiscalQueue) return;
+      isProcessingFiscalQueue = true;
+      blockEverything("Processing fiscal...", true);
+      try {
+        const pending = fiscalQueue.filter(q => q.status === 'pending');
+        for (let i = 0; i < pending.length; i++) {
+          const item = pending[i];
+          updateBlockMessage(`Fiscalizing ${i+1}/${pending.length}: ${item.receipt_no}`);
+          try {
+            const result = await fiscalizeReceipt(item.data);
+            if (result.success) {
+              await updateSaleStatus(item.receipt_no, { fiscalized: true, fiscal_data: result.data });
+              await deleteFromDB('sync_queue', item.receipt_no);
+            } else {
+              item.attempts++;
+              if (item.attempts >= 3) item.status = 'failed';
+              item.last_error = result.error;
+              await saveToDB('sync_queue', item);
+            }
+          } catch (e) {
+            item.attempts++;
+            if (item.attempts >= 3) item.status = 'failed';
+            item.last_error = e.message;
+            await saveToDB('sync_queue', item);
+          }
+        }
+        await loadQueues(); renderQueues();
+      } finally { unblockEverything(); isProcessingFiscalQueue = false; }
+    }
+
+    async function retryAllFailedFiscal() {
+      const failed = fiscalQueue.filter(q => q.status === 'failed');
+      for (const item of failed) { item.status = 'pending'; item.attempts = 0; await saveToDB('sync_queue', item); }
+      await loadQueues(); renderQueues(); processFiscalQueueBlocking();
+    }
+
+    async function retryQueueItem(receiptNo) {
+      const item = await getFromDB('sync_queue', receiptNo);
+      if (item) { item.status = 'pending'; item.attempts = 0; await saveToDB('sync_queue', item); await loadQueues(); renderQueues(); }
+    }
+
+    // ============================================================================
+    // API CALLS
+    // ============================================================================
+    async function syncSaleToCloud(sale) {
+      try {
+        const params = new URLSearchParams();
+        params.append('batch', 'true');
+        params.append('receipt_no', sale.receipt_no);
+        params.append('Cashier', sale.cashier);
+        params.append('Date', sale.date);
+        params.append('Time', sale.time);
+        params.append('total_excl', sale.total_excl.toFixed(4));
+        params.append('total_vat', sale.total_vat.toFixed(4));
+        params.append('total_incl', sale.total_incl.toFixed(4));
+        params.append('payment_method', sale.payment_method);
+        params.append('currency', sale.currency || 'USD');
+        sale.items.forEach((item, idx) => {
+          params.append(`Product[${idx}]`, item.name);
+          params.append(`Price[${idx}]`, item.price.toFixed(4));
+          params.append(`Stock[${idx}]`, (-item.quantity).toFixed(4));
+        });
+        const response = await fetch(`https://script.google.com/macros/s/AKfycbyyZIWw6NFX5Av4lPWEsIC48-dFdhhJjf16beVwgelkTloIXjczjoIeBa5ptEjGewc/exec?${params.toString()}`);
+        const text = await response.text();
+        try { return JSON.parse(text).status === 'success'; } catch { return text.includes('success'); }
+      } catch { return false; }
+    }
+
+    async function fiscalizeReceipt(sale) {
+  try {
+    const params = new URLSearchParams();
+    params.append('action', 'sale');
+    params.append('receipt_no', sale.receipt_no);
+    params.append('currency', sale.currency || 'USD');
+    params.append('customerName', sale.customerName || 'Walk-in Customer');
+    params.append('customerTIN', sale.customerTin || COMPANY_TIN);
+    params.append('customerVAT', sale.customerVat || COMPANY_VAT);
+    params.append('customerAddress', sale.customerAddress || COMPANY_ADDRESS);
+    params.append('customerContact', sale.customerPhone || COMPANY_PHONE);
+    params.append('customerEmail', sale.customerEmail || COMPANY_EMAIL);
+    params.append('payType', sale.payment_method);
+    params.append('storeName', COMPANY_NAME);
+    params.append('storeId', STORE_ID);
+    params.append('storeAddress', COMPANY_ADDRESS);
+    params.append('storeTINnumber', COMPANY_TIN);
+    params.append('storeVATnumber', COMPANY_VAT);
+    
+    sale.items.forEach((item, idx) => {
+      const prodNum = idx + 1;
+      const vatRate = parseFloat(item.tax) || 0;
+      // PASS INCLUSIVE PRICE DIRECTLY - NO CONVERSION
+      const inclusivePrice = item.price;
+      params.append(`prod${prodNum}`, item.name);
+      params.append(`qnt${prodNum}`, item.quantity.toFixed(4));
+      params.append(`price${prodNum}`, inclusivePrice.toFixed(4));  // ← Sending INCLUSIVE price
+      params.append(`vat${prodNum}`, vatRate > 0 ? `${vatRate}%25` : '0%25');
+      params.append(`code${prodNum}`, item.code || '');
+    });
+    
+    const response = await fetch(`${FISCAL_API_ENDPOINT}?${params.toString()}`);
+    const text = await response.text();
+    
+    try {
+      const result = JSON.parse(text);
+      
+      let zimraData = null;
+      let isSuccess = false;
+      
+      if (result.apiResponse?.data?.receipt && Array.isArray(result.apiResponse.data.receipt)) {
+        const receiptData = result.apiResponse.data.receipt[0];
+        if (receiptData) {
+          isSuccess = true;
+          zimraData = {
+            zimraSubmitted: receiptData.zimraSubmitted || false,
+            zimraDeviceId: receiptData.zimraDeviceId || null,
+            zimraQrData: receiptData.zimraQrData || null,
+            zimraFiscalDayNo: receiptData.zimraFiscalDayNo || null,
+            zimraGlobalNo: receiptData.zimraGlobalNo || null,
+            zimraReceiptId: receiptData.zimraReceiptId || null,
+            zimraOperationId: receiptData.zimraOperationId || null,
+            zimraQrUrl: receiptData.zimraQrUrl || null,
+            receiptNumber: receiptData.receipt || sale.receipt_no,
+            receiptType: receiptData.receiptType || 'FiscalInvoice'
+          };
+        }
+      } else if (result.apiResponse?.data && result.apiResponse.data.zimraDeviceId) {
+        isSuccess = true;
+        zimraData = {
+          zimraSubmitted: result.apiResponse.data.zimraSubmitted || false,
+          zimraDeviceId: result.apiResponse.data.zimraDeviceId,
+          zimraQrData: result.apiResponse.data.zimraQrData,
+          zimraFiscalDayNo: result.apiResponse.data.zimraFiscalDayNo,
+          zimraGlobalNo: result.apiResponse.data.zimraGlobalNo,
+          zimraReceiptId: result.apiResponse.data.zimraReceiptId,
+          zimraOperationId: result.apiResponse.data.zimraOperationId,
+          zimraQrUrl: result.apiResponse.data.zimraQrUrl,
+          receiptNumber: result.apiResponse.data.receipt || sale.receipt_no
+        };
+      } else if (result.success === true) {
+        isSuccess = true;
+        zimraData = { receiptNumber: sale.receipt_no };
+      }
+      
+      if (isSuccess) {
+        return { success: true, data: zimraData };
+      }
+      return { success: false, error: result.message || result.apiResponse?.message || 'Fiscalization failed' };
+    } catch {
+      if (text.includes('SUCCESS') || text.includes('Receipt saved')) {
+        return { success: true, data: { receiptNumber: sale.receipt_no } };
+      }
+      return { success: false, error: text };
+    }
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+}
+
+    // ============================================================================
+    // HELPER FUNCTIONS
+    // ============================================================================
+    function blockEverything(msg, showSpinner = true) {
+      const overlay = document.getElementById("fullBlockOverlay");
+      const msgEl = document.getElementById("fullBlockMessage");
+      const spinner = document.querySelector("#fullBlockOverlay .block-spinner");
+      if (msgEl) msgEl.textContent = msg;
+      if (spinner) spinner.style.display = showSpinner ? "block" : "none";
+      if (overlay) overlay.classList.add('show');
+    }
+
+    function unblockEverything() {
+      const overlay = document.getElementById("fullBlockOverlay");
+      if (overlay) overlay.classList.remove('show');
+      isProcessingSale = false;
+    }
+
+    function updateBlockMessage(msg) {
+      const msgEl = document.getElementById("fullBlockMessage");
+      if (msgEl) msgEl.textContent = msg;
+    }
+
+    function formatCurrency(amt, currency = displayCurrency) {
+      const val = currency === 'USD' ? amt : amt * USD_TO_ZWG_RATE;
+      return `${currency === 'USD' ? '$' : 'Z$'}${val.toFixed(2)}`;
+    }
+
+    function setCurrency(c) {
+      displayCurrency = c;
+      document.querySelectorAll('.selector-btn').forEach(b => b.classList.remove('active'));
+      document.getElementById(`btn${c}`).classList.add('active');
+      renderCart();
+    }
+
+    function setPaymentMethod(m) {
+      selectedPaymentMethod = m;
+      document.querySelectorAll('.selector-group .selector-btn').forEach(b => b.classList.remove('active'));
+      document.getElementById(`btn${m}`).classList.add('active');
+    }
+
+    function calculateItemVAT(item) {
+      const vatRate = parseFloat(item.tax) || 0;
+      if (vatRate === 0) return { amount: 0, exclusive: item.total, inclusive: item.total };
+      const exclusive = item.total / (1 + vatRate / 100);
+      return { amount: item.total - exclusive, exclusive: exclusive };
+    }
+
+    function calculateCartVAT() {
+      let excl = 0, vat = 0;
+      cart.forEach(i => {
+        const calc = calculateItemVAT(i);
+        excl += calc.exclusive;
+        vat += calc.amount;
+      });
+      return { exclusive: excl, vat: vat, inclusive: excl + vat };
+    }
+
+    function renderCart() {
+      const container = document.getElementById("cart-items");
+      if (!container) return;
+      container.innerHTML = "";
+      cart.forEach((item, idx) => {
+        const div = document.createElement("div");
+        div.className = "cart-item";
+        div.innerHTML = `<div class="cart-item-details"><div class="cart-item-name">${escapeHtml(item.name)}</div><div class="cart-item-meta">Amount: ${formatCurrency(item.price)} | Cost: ${formatCurrency(item.cost)} | VAT: ${item.tax}%</div></div><button class="delete-btn" onclick="removeFromCart(${idx})"><i class="fas fa-trash"></i></button><div class="cart-item-total">${formatCurrency(item.total)}</div>`;
+        container.appendChild(div);
+      });
+      const vc = calculateCartVAT();
+      document.getElementById("cart-total").innerHTML = `Total: ${formatCurrency(vc.inclusive)}`;
+      document.getElementById("vatBreakdown").innerHTML = `<div class="vat-row"><span>Subtotal (Excl. VAT):</span><span>${formatCurrency(vc.exclusive)}</span></div><div class="vat-row"><span>VAT Amount (${DEFAULT_VAT}%):</span><span>${formatCurrency(vc.vat)}</span></div><div class="vat-row" style="font-weight:600;"><span>Total (Incl. VAT):</span><span>${formatCurrency(vc.inclusive)}</span></div>`;
+    }
+
+    function removeFromCart(idx) { cart.splice(idx, 1); renderCart(); saveCartToDB(); }
+
+    async function saveCartToDB() {}
+
+    function addManualItemToCart() {
+      const desc = document.getElementById("manualDesc").value.trim();
+      const cost = parseFloat(document.getElementById("manualCost").value) || 0;
+      const price = parseFloat(document.getElementById("manualPrice").value) || 0;
+      let tax = parseFloat(document.getElementById("manualTax").value);
+      if (isNaN(tax) || tax === 0) tax = DEFAULT_VAT;
+      if (!desc) { showAlert("Missing", "Please enter service description"); return; }
+      if (price <= 0) { showAlert("Invalid", "Amount received must be >0"); return; }
+      cart.push({ id: Date.now() + Math.random(), name: desc, code: `SRV-${Date.now()}`, cost, price, quantity: 1, total: price, tax, item_type: 'service' });
+      renderCart();
+      document.getElementById("manualDesc").value = "";
+      document.getElementById("manualCost").value = "";
+      document.getElementById("manualPrice").value = "";
+      document.getElementById("manualTax").value = DEFAULT_VAT;
+      showAlert("Added", `${desc} added to cart`);
+    }
+
+    function showCashModal(total) {
+      return new Promise(resolve => {
+        pendingCashTotal = total;
+        pendingCashResolve = resolve;
+        document.getElementById("cashTotalDue").innerText = formatCurrency(total);
+        document.getElementById("cashReceivedDisplay").innerText = "0";
+        document.getElementById("changeDisplay").style.display = "none";
+        document.getElementById("confirmCashBtn").disabled = true;
+        cashInputStr = "0";
+        document.getElementById("cashModal").classList.add('show');
+      });
+    }
+
+    function cashKeypadInput(char) {
+      if (char === '.' && cashInputStr.includes('.')) return;
+      if (cashInputStr === "0") cashInputStr = char === '.' ? "0." : char;
+      else cashInputStr += char;
+      document.getElementById("cashReceivedDisplay").innerText = cashInputStr;
+      const rec = parseFloat(cashInputStr) || 0;
+      const change = rec - pendingCashTotal;
+      const cd = document.getElementById("changeDisplay");
+      if (rec > 0) {
+        cd.style.display = "block";
+        document.getElementById("changeAmount").innerText = formatCurrency(Math.abs(change));
+        document.getElementById("confirmCashBtn").disabled = rec < pendingCashTotal;
+      } else {
+        cd.style.display = "none";
+        document.getElementById("confirmCashBtn").disabled = true;
+      }
+    }
+
+    function cashKeypadClear() { cashInputStr = "0"; document.getElementById("cashReceivedDisplay").innerText = "0"; document.getElementById("changeDisplay").style.display = "none"; document.getElementById("confirmCashBtn").disabled = true; }
+    function cashKeypadEnter() { confirmCashPayment(); }
+    function confirmCashPayment() {
+      const rec = parseFloat(cashInputStr) || 0;
+      if (rec < pendingCashTotal) { showAlert("Insufficient", "Cash received less than total"); return; }
+      document.getElementById("cashModal").classList.remove('show');
+      if (pendingCashResolve) pendingCashResolve({ received: rec, change: rec - pendingCashTotal });
+      pendingCashResolve = null;
+    }
+
+    // ============================================================================
+    // SALE COMPLETION WITH FISCALIZATION
+    // ============================================================================
+    let lastReceiptKey = "";
+    let lastReceiptSeq = 0;
+
+    function generateReceiptNumber() {
+      const prefix = (currentUser?.username || "UN").replace(/[^A-Za-z0-9]/g, "").substring(0, 2).toUpperCase();
+      const now = new Date();
+      const yyyy = now.getFullYear();
+      const mm = String(now.getMonth() + 1).padStart(2, "0");
+      const dd = String(now.getDate()).padStart(2, "0");
+      const hh = String(now.getHours()).padStart(2, "0");
+      const mi = String(now.getMinutes()).padStart(2, "0");
+      const ss = String(now.getSeconds()).padStart(2, "0");
+      const ms = String(now.getMilliseconds()).padStart(3, "0");
+      const msKey = `${yyyy}${mm}${dd}${hh}${mi}${ss}${ms}`;
+      if (lastReceiptKey === msKey) { lastReceiptSeq++; } else { lastReceiptKey = msKey; lastReceiptSeq = 1; }
+      const seq = String(lastReceiptSeq).padStart(3, "0");
+      return `${prefix}-${yyyy}${mm}${dd}-${hh}${mi}${ss}${ms}-${seq}`;
+    }
+
+    async function completeSale() {
+      if (isProcessingSale) return;
+      if (cart.length === 0) { showAlert("Empty Cart", "Add items to cart"); return; }
+      const vc = calculateCartVAT();
+      const total = vc.inclusive;
+      if (!await showConfirm("Confirm Sale", `Total: ${formatCurrency(total)}. Complete?`)) return;
+      if (selectedPaymentMethod === 'CASH') {
+        const cr = await showCashModal(total);
+        if (!cr) return;
+        cashReceived = cr.received;
+        changeAmount = cr.change;
+      } else {
+        cashReceived = total;
+        changeAmount = 0;
+      }
+      isProcessingSale = true;
+      blockEverything("Processing sale...", true);
+      const completeBtn = document.getElementById("completeSaleBtn");
+      if (completeBtn) completeBtn.disabled = true;
+
+      try {
+        const receiptNo = generateReceiptNumber();
+        const profit = cart.reduce((s, i) => s + i.quantity * (i.price - i.cost), 0);
+        const now = new Date();
+        const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+        const timeStr = now.toLocaleTimeString();
+
+        const sale = {
+          receipt_no: receiptNo,
+          date: todayStr,
+          time: timeStr,
+          cashier: currentUser?.username || "Admin",
+          branch: currentBranch,
+          items: cart.map(i => ({ name: i.name, code: i.code, quantity: i.quantity, price: i.price, cost: i.cost, tax: i.tax, total: i.quantity * i.price })),
+          total_excl: vc.exclusive,
+          total_vat: vc.vat,
+          total_incl: vc.inclusive,
+          profit: profit,
+          payment_method: selectedPaymentMethod,
+          currency: displayCurrency,
+          cash_received: cashReceived,
+          change: changeAmount,
+          customerName: document.getElementById("customerName").value.trim() || "Walk-in Customer",
+          customerTin: document.getElementById("customerTin").value.trim(),
+          customerVat: document.getElementById("customerVat").value.trim(),
+          customerAddress: document.getElementById("customerAddress").value.trim(),
+          customerEmail: document.getElementById("customerEmail").value.trim(),
+          customerPhone: document.getElementById("customerPhone").value.trim(),
+          synced: false,
+          fiscalized: false,
+          timestamp: Date.now()
+        };
+
+        updateBlockMessage("STEP 1/3: Saving sale...");
+        await saveToDB('sales', sale);
+
+        updateBlockMessage("STEP 2/3: Adding to queues...");
+        await addToSyncQueue(sale);
+        await addToFiscalQueue(sale);
+        await loadQueues();
+
+        updateBlockMessage("STEP 3/3: Processing fiscalization...");
+        await processFiscalQueueBlocking();
+
+        const updatedSale = await getFromDB('sales', receiptNo) || sale;
+
+        if (updatedSale.fiscalized && updatedSale.fiscal_data) {
+          console.log('✅ Fiscal Data Received:', updatedSale.fiscal_data);
+          console.log('  Device ID:', updatedSale.fiscal_data.zimraDeviceId);
+          console.log('  Fiscal Day:', updatedSale.fiscal_data.zimraFiscalDayNo);
+          console.log('  QR Data:', updatedSale.fiscal_data.zimraQrData);
+        } else {
+          console.log('⏳ Fiscalization pending for:', receiptNo);
+        }
+
+        cart = [];
+        renderCart();
+        await updateSalesTarget();
+
+        unblockEverything();
+        if (completeBtn) completeBtn.disabled = false;
+        isProcessingSale = false;
+
+        await showAlert("Sale Complete", `Receipt: ${receiptNo}\nTotal: ${formatCurrency(total)}\n${updatedSale.fiscalized ? '✓ FISCALIZED ✓' : '⚠️ Fiscalization pending - will process in background'}`);
+        await printReceipt(updatedSale);
+
+      } catch (error) {
+        console.error('Sale failed:', error);
+        unblockEverything();
+        if (completeBtn) completeBtn.disabled = false;
+        isProcessingSale = false;
+        await showAlert("Error", `Sale failed: ${error.message}`);
+      }
+    }
+
+    // ============================================================================
+    // PRINT RECEIPT WITH QR CODE
+    // ============================================================================
+    async function printReceipt(sale) {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+      doc.setFont("helvetica");
+      
+      doc.setFontSize(16);
+      doc.text(COMPANY_NAME, 105, 20, { align: "center" });
+      doc.setFontSize(10);
+      doc.text(COMPANY_ADDRESS, 105, 28, { align: "center" });
+      doc.text(`TIN: ${COMPANY_TIN} | VAT: ${COMPANY_VAT} | Tel: ${COMPANY_PHONE}`, 105, 34, { align: "center" });
+      doc.text(`Email: ${COMPANY_EMAIL}`, 105, 40, { align: "center" });
+      doc.line(20, 46, 190, 46);
+      
+      doc.setFontSize(10);
+      doc.text(`Receipt No: ${sale.receipt_no}`, 20, 56);
+      doc.text(`Date: ${sale.date} ${sale.time}`, 20, 62);
+      doc.text(`Cashier: ${sale.cashier}`, 20, 68);
+      doc.text(`Customer: ${sale.customerName || 'Walk-in Customer'}`, 20, 74);
+      if (sale.customerTin) doc.text(`TIN: ${sale.customerTin}`, 20, 80);
+      if (sale.customerVat) doc.text(`VAT No: ${sale.customerVat}`, 20, 86);
+      if (sale.customerPhone) doc.text(`Phone: ${sale.customerPhone}`, 20, 92);
+      doc.line(20, 98, 190, 98);
+      
+      doc.setFontSize(9);
+      let y = 106;
+      doc.text("Description", 20, y);
+      doc.text("Qty", 120, y);
+      doc.text("Price", 150, y);
+      doc.text("Total", 175, y);
+      y += 6;
+      
+      sale.items.forEach(item => {
+        const lines = doc.splitTextToSize(item.name, 90);
+        doc.text(lines, 20, y);
+        const qtyDisplay = item.item_type === 'each' ? item.quantity.toFixed(0) : item.quantity.toFixed(3);
+        doc.text(qtyDisplay, 120, y);
+        doc.text(formatCurrency(item.price, sale.currency), 150, y);
+        doc.text(formatCurrency(item.total, sale.currency), 175, y);
+        y += 6 * lines.length;
+        if (y > 200) { doc.addPage(); y = 20; }
+      });
+      
+      doc.line(20, y, 190, y);
+      y += 6;
+      doc.text(`Subtotal (Excl. VAT): ${formatCurrency(sale.total_excl, sale.currency)}`, 140, y);
+      y += 6;
+      doc.text(`VAT (15.5%): ${formatCurrency(sale.total_vat, sale.currency)}`, 140, y);
+      y += 6;
+      doc.setFontSize(11);
+      doc.text(`TOTAL: ${formatCurrency(sale.total_incl, sale.currency)}`, 140, y);
+      y += 8;
+      
+      if (sale.payment_method === 'CASH') {
+        doc.text(`Cash Received: ${formatCurrency(sale.cash_received, sale.currency)}`, 140, y);
+        y += 6;
+        doc.text(`Change: ${formatCurrency(sale.change, sale.currency)}`, 140, y);
+        y += 8;
+      }
+      
+      doc.text(`Payment Method: ${sale.payment_method}`, 140, y);
+      y += 12;
+      
+      if (sale.fiscalized && sale.fiscal_data) {
+        const fd = sale.fiscal_data;
+        const zimraDeviceId = fd.zimraDeviceId || fd.device_id || '';
+        const zimraGlobalNo = fd.zimraGlobalNo || fd.global_no || '';
+        const zimraQrData = fd.zimraQrData || fd.qr_data || '';
+        const zimraFiscalDayNo = fd.zimraFiscalDayNo || fd.fiscal_day_no || '';
+        const zimraReceiptId = fd.zimraReceiptId || fd.receipt_id || '';
+        
+        doc.setFontSize(10);
+        doc.setFont("helvetica", "bold");
+        doc.text("FISCALIZED RECEIPT", 105, y, { align: "center" });
+        y += 8;
+        
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(9);
+        
+        if (zimraFiscalDayNo) {
+          doc.text(`Fiscal Day: ${zimraFiscalDayNo}`, 105, y, { align: "center" });
+          y += 6;
+        }
+        
+        if (zimraDeviceId) {
+          doc.text(`Device ID: ${zimraDeviceId}`, 105, y, { align: "center" });
+          y += 6;
+        }
+        
+        if (zimraGlobalNo) {
+          doc.text(`Global No: ${zimraGlobalNo}`, 105, y, { align: "center" });
+          y += 6;
+        }
+        
+        if (zimraReceiptId) {
+          doc.text(`ZIMRA Receipt ID: ${zimraReceiptId}`, 105, y, { align: "center" });
+          y += 8;
+        }
+        
+        if (zimraDeviceId && zimraGlobalNo && zimraQrData && sale.date) {
+          const dateParts = sale.date.split('-');
+          const dateStr = `${dateParts[2]}${dateParts[1]}${dateParts[0]}`;
+          const paddedDeviceId = String(zimraDeviceId).padStart(10, '0');
+          const paddedGlobalNo = String(zimraGlobalNo).padStart(10, '0');
+          const qrUrl = `https://fdms.zimra.co.zw/${paddedDeviceId}${dateStr}${paddedGlobalNo}${zimraQrData}`;
+          
+          try {
+            const qrResponse = await fetch(`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(qrUrl)}`);
+            const qrBlob = await qrResponse.blob();
+            const reader = new FileReader();
+            
+            await new Promise((resolve) => {
+              reader.onloadend = function() {
+                doc.addImage(reader.result, 'PNG', 105 - 25, y, 50, 50);
+                resolve();
+              };
+              reader.readAsDataURL(qrBlob);
+            });
+            
+            y += 55;
+            
+            doc.setFontSize(8);
+            doc.text("Verify at: fdms.zimra.co.zw", 105, y, { align: "center" });
+            y += 6;
+            doc.text(`QR Data: ${zimraQrData}`, 105, y, { align: "center" });
+            y += 8;
+          } catch (e) {
+            console.warn('QR generation failed:', e);
+            doc.text("QR Code unavailable", 105, y, { align: "center" });
+            y += 8;
+          }
+        } else {
+          doc.text("ZIMRA Fiscal Data:", 105, y, { align: "center" });
+          y += 6;
+          if (zimraQrData) {
+            doc.text(`QR Data: ${zimraQrData}`, 105, y, { align: "center" });
+            y += 6;
+          } else {
+            doc.text("Awaiting ZIMRA confirmation", 105, y, { align: "center" });
+            y += 6;
+          }
+        }
+      } else {
+        doc.setFontSize(9);
+        doc.text("FISCALIZATION PENDING", 105, y, { align: "center" });
+        y += 8;
+        doc.setFontSize(8);
+        doc.text("This receipt will be fiscalized", 105, y, { align: "center" });
+        y += 8;
+        doc.text("when connection is restored", 105, y, { align: "center" });
+        y += 8;
+      }
+      
+      doc.setFontSize(9);
+      doc.text("Thank you for your business!", 105, y + 10, { align: "center" });
+      doc.save(`Receipt_${sale.receipt_no}.pdf`);
+    }
+
+    function getFiscalStatusHTML(sale) {
+      if (!sale.fiscalized || !sale.fiscal_data) {
+        return '<span style="color: var(--warning);">⏳ Pending Fiscalization</span>';
+      }
+      
+      const fd = sale.fiscal_data;
+      return `
+        <div style="background: #e8f5e9; padding: 0.75rem; border-radius: 0.5rem; margin-top: 0.5rem;">
+          <strong><i class="fas fa-check-circle" style="color: var(--secondary);"></i> Fiscalized</strong><br>
+          ${fd.zimraDeviceId ? `<small>Device ID: ${fd.zimraDeviceId}</small><br>` : ''}
+          ${fd.zimraFiscalDayNo ? `<small>Fiscal Day: ${fd.zimraFiscalDayNo}</small><br>` : ''}
+          ${fd.zimraGlobalNo ? `<small>Global No: ${fd.zimraGlobalNo}</small><br>` : ''}
+          ${fd.zimraQrData ? `<small>QR Data: ${fd.zimraQrData.substring(0, 20)}...</small>` : ''}
+        </div>
+      `;
+    }
+
+    // ============================================================================
+    // REPORTS & CASHUP
+    // ============================================================================
+    async function loadAllSales() {
+      const sales = await getFromDB('sales');
+      allSales = Array.isArray(sales) ? sales : Object.values(sales || {});
+      const cashups = await getFromDB('cashups');
+      allCashups = Array.isArray(cashups) ? cashups : Object.values(cashups || {});
+      renderSalesTable(allSales.filter(s => s));
+    }
+
+    function renderSalesTable(sales) {
+      const tbody = document.getElementById("salesTableBody");
+      if (!tbody) return;
+      let sumExcl = 0, sumVat = 0, sumIncl = 0;
+      tbody.innerHTML = sales.slice(0, 200).map(s => {
+        sumExcl += s.total_excl || 0;
+        sumVat += s.total_vat || 0;
+        sumIncl += s.total_incl || 0;
+        return `<tr onclick="showSaleDetail('${s.receipt_no}')"><td>${s.receipt_no}${s.fiscalized ? '<span class="fiscal-badge">✓</span>' : ''}${s.synced ? '' : '📦'}${!s.fiscalized ? '⏳' : ''}</td><td>${s.date}${s.time ? ' ' + s.time : ''}</td><td>${s.cashier}</td><td>${s.customerName || 'Walk-in'}</td><td>${formatCurrency(s.total_excl, s.currency)}</td><td>${formatCurrency(s.total_vat, s.currency)}</td><td>${formatCurrency(s.total_incl, s.currency)}</td><td>${s.fiscalized ? '<span class="fiscal-badge">FISCALIZED</span>' : '<span class="queue-pending" style="padding:0.25rem 0.5rem;border-radius:0.25rem;">PENDING</span>'}</td></tr>`;
+      }).join('');
+      document.getElementById("summaryExcl").innerHTML = formatCurrency(sumExcl);
+      document.getElementById("summaryVat").innerHTML = formatCurrency(sumVat);
+      document.getElementById("summaryIncl").innerHTML = formatCurrency(sumIncl);
+    }
+
+    async function showSaleDetail(receiptNo) {
+      const sale = await getFromDB('sales', receiptNo);
+      if (!sale) return;
+      currentSaleDetail = sale;
+      const itemsHtml = sale.items.map(i => `<div style="display:flex;justify-content:space-between;padding:0.25rem 0;"><span>${escapeHtml(i.name)} x${i.quantity.toFixed(3)}</span><span>${formatCurrency(i.total, sale.currency)}</span></div>`).join('');
+      document.getElementById("saleDetailBody").innerHTML = `<div><strong>Receipt:</strong> ${sale.receipt_no}</div>${getFiscalStatusHTML(sale)}<div><strong>Date:</strong> ${sale.date} ${sale.time}</div><div><strong>Cashier:</strong> ${sale.cashier}</div><div><strong>Customer:</strong> ${sale.customerName || 'Walk-in'}</div><hr>${itemsHtml}<hr><div><strong>Subtotal Excl. VAT:</strong> ${formatCurrency(sale.total_excl, sale.currency)}</div><div><strong>VAT (15.5%):</strong> ${formatCurrency(sale.total_vat, sale.currency)}</div><div><strong>Total:</strong> ${formatCurrency(sale.total_incl, sale.currency)}</div><div><strong>Payment:</strong> ${sale.payment_method}</div>${sale.payment_method === 'CASH' ? `<div><strong>Cash Received:</strong> ${formatCurrency(sale.cash_received, sale.currency)}</div><div><strong>Change:</strong> ${formatCurrency(sale.change, sale.currency)}</div>` : ''}${sale.fiscal_data && sale.fiscal_data.zimraDeviceId ? `<hr><div><strong>Device ID:</strong> ${sale.fiscal_data.zimraDeviceId}</div><div><strong>Fiscal Day:</strong> ${sale.fiscal_data.zimraFiscalDayNo || 'N/A'}</div><div><strong>Global No:</strong> ${sale.fiscal_data.zimraGlobalNo || 'N/A'}</div><div><strong>QR Data:</strong> ${sale.fiscal_data.zimraQrData || 'N/A'}</div>` : ''}`;
+      document.getElementById("saleDetailModal").classList.add('show');
+    }
+
+    async function downloadReceiptPDF() {
+      if (currentSaleDetail) await printReceipt(currentSaleDetail);
+    }
+
+    function applyFilters() {
+      let filtered = allSales;
+      const sd = document.getElementById("startDate").value;
+      const ed = document.getElementById("endDate").value;
+      const cashier = document.getElementById("cashierFilter").value;
+      if (sd) filtered = filtered.filter(s => s.date >= sd);
+      if (ed) filtered = filtered.filter(s => s.date <= ed);
+      if (cashier) filtered = filtered.filter(s => s.cashier === cashier);
+      renderSalesTable(filtered);
+    }
+
+    function resetFilters() {
+      document.getElementById("startDate").value = "";
+      document.getElementById("endDate").value = "";
+      document.getElementById("cashierFilter").value = "";
+      renderSalesTable(allSales);
+    }
+
+    async function updateSalesTarget() {
+      const sales = await getFromDB('sales');
+      const salesArray = Array.isArray(sales) ? sales : Object.values(sales || {});
+      const now = new Date();
+      const month = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+      const total = salesArray.filter(s => s.date && s.date.startsWith(month)).reduce((a, b) => a + (b.total_incl || 0), 0);
+      const percent = Math.min((total / SALES_TARGET) * 100, 100);
+      document.getElementById("targetProgressFill").style.width = `${percent}%`;
+      document.getElementById("targetPercent").innerText = `${percent.toFixed(2)}%`;
+    }
+
+    async function openCashup() {
+      const cashier = currentUser?.username || "Admin";
+      const today = new Date().toISOString().split('T')[0];
+      const todaySales = allSales.filter(s => s.cashier === cashier && s.date === today);
+      const expected = todaySales.reduce((s, sum) => s + (sum.total_incl || 0), 0);
+      document.getElementById("cashupExpected").innerHTML = `<strong>Transactions:</strong> ${todaySales.length}<br><strong>Expected Total:</strong> ${formatCurrency(expected)}`;
+      window._cashupExpected = expected;
+      document.getElementById("cashAtHandInput").value = "";
+      document.getElementById("bankInput").value = "";
+      document.getElementById("cashupModal").classList.add('show');
+    }
+
+    async function completeCashup() {
+      const cashAtHand = parseFloat(document.getElementById("cashAtHandInput").value) || 0;
+      const bank = parseFloat(document.getElementById("bankInput").value) || 0;
+      const declared = cashAtHand + bank;
+      const variance = declared - (window._cashupExpected || 0);
+      const cashup = { date: new Date().toISOString().split('T')[0], time: new Date().toLocaleTimeString(), cashier: currentUser?.username || "Admin", expected: window._cashupExpected, cashAtHand, bank, declared, variance };
+      await saveToDB('cashups', cashup);
+      await loadAllSales();
+      closeModal('cashupModal');
+      showAlert("Cashup Complete", `Expected: ${formatCurrency(window._cashupExpected)}\nDeclared: ${formatCurrency(declared)}\nVariance: ${variance >= 0 ? '+' : ''}${formatCurrency(Math.abs(variance))}`);
+    }
+
+    function openReports() { document.getElementById("reportsPanel").classList.add('show'); loadAllSales(); loadQueues(); renderQueues(); }
+    function closeReports() { document.getElementById("reportsPanel").classList.remove('show'); }
+    function switchView(view) { if (view === 'pos') closeReports(); else if (view === 'reports') openReports(); document.querySelectorAll('.footer-item').forEach((el, i) => el.classList.toggle('active', (view === 'pos' && i === 0) || (view === 'reports' && i === 1))); }
+    function switchReportTab(tab) {
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      if (event && event.target) event.target.classList.add('active');
+      document.getElementById('salesHistoryTab').style.display = tab === 'sales' ? 'block' : 'none';
+      const queuesTab = document.getElementById('queuesTab');
+      if (queuesTab) queuesTab.style.display = tab === 'queues' ? 'block' : 'none';
+      if (tab === 'queues') { loadQueues(); renderQueues(); }
+    }
+
+    function showAlert(title, msg) { return new Promise(resolve => { document.getElementById("modalTitle").innerHTML = title; document.getElementById("modalMessage").innerHTML = msg; document.getElementById("alertModal").classList.add('show'); window.alertResolve = resolve; }); }
+    function showConfirm(title, msg) { return new Promise(resolve => { document.getElementById("confirmTitle").innerHTML = title; document.getElementById("confirmMessage").innerHTML = msg; document.getElementById("confirmModal").classList.add('show'); confirmResolve = resolve; }); }
+    function confirmOK() { if (confirmResolve) confirmResolve(true); document.getElementById("confirmModal").classList.remove('show'); confirmResolve = null; }
+    function confirmCancel() { if (confirmResolve) confirmResolve(false); document.getElementById("confirmModal").classList.remove('show'); confirmResolve = null; }
+    function closeModal(id) { document.getElementById(id)?.classList.remove('show', 'active'); if (id === 'alertModal' && window.alertResolve) { window.alertResolve(); window.alertResolve = null; } }
+    function escapeHtml(s) { if (!s) return ''; return s.replace(/[&<>]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[m])); }
+
+    // ============================================================================
+    // LOGIN
+    // ============================================================================
+    async function loadUsersFromAPI() {
+      try {
+        const r = await fetch(ACCOUNTS_API_ENDPOINT);
+        const d = await r.json();
+        if (d.success && d.data) {
+          for (const user of d.data) await saveToDB('users', user);
+          return d.data;
+        }
+      } catch (e) { }
+      return await getFromDB('users');
+    }
+
+    async function loadProductsFromAPI() {
+      try {
+        const response = await fetch(`${PRODUCTS_API_ENDPOINT}?action=get_stock_lite`);
+        const data = await response.json();
+        if (data.status === 'success' && data.data) {
+          for (const item of data.data) {
+            await saveToDB('products', {
+              code: item.code,
+              name: item.product,
+              price: parseFloat(item.selling_price) || 0,
+              cost: parseFloat(item.cost_price) || 0,
+              stock: parseFloat(item.current_stock) || 0,
+              item_type: item.item_type || '',
+              tax: item.tax_percentage || 0
+            });
+          }
+        }
+      } catch (e) { }
+    }
+
+    async function attemptLogin(u, p) {
+      const users = await getFromDB('users');
+      const user = (users || []).find(us => us.username === u && String(us.Password) === String(p));
+      if (!user) return { success: false };
+      if (user.Branch && user.Branch.includes(',')) return { success: true, user, branches: user.Branch.split(',').map(b => b.trim()) };
+      return { success: true, user };
+    }
+
+    function completeLogin(user) {
+      currentUser = user;
+      currentBranch = user.Branch || "Main";
+      localStorage.setItem("username", user.username);
+      document.getElementById("loginContainer").style.display = "none";
+      document.getElementById("appContainer").style.display = "block";
+      document.getElementById("welcomeMessage").innerText = user.username;
+      document.getElementById("userAvatar").innerText = user.username.charAt(0).toUpperCase();
+      if ((user.Role || '').toLowerCase() === 'admin') document.getElementById("reportBtn").style.display = "inline-block";
+      document.getElementById("logoutBtn").onclick = () => { localStorage.clear(); location.reload(); };
+      loadProductsFromAPI();
+      loadAllSales();
+      updateSalesTarget();
+    }
+
+    function confirmBranch() {
+      const branch = document.getElementById("branchSelect").value;
+      if (window._branchUser) {
+        window._branchUser.Branch = branch;
+        completeLogin(window._branchUser);
+        window._branchUser = null;
+      }
+      closeModal('branchModal');
+    }
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      await initIndexedDB();
+      await loadUsersFromAPI();
+      const saved = localStorage.getItem("username");
+      if (saved) {
+        const users = await getFromDB('users');
+        const found = users.find(u => u.username === saved);
+        if (found) completeLogin(found);
+      }
+      document.getElementById("syncStatus").style.display = "none";
+      window.addEventListener('online', () => document.getElementById("offlineIndicator").style.display = "none");
+      window.addEventListener('offline', () => document.getElementById("offlineIndicator").style.display = "block");
+      
+      setInterval(() => {
+        if (navigator.onLine && !isProcessingSyncQueue && !isProcessingFiscalQueue) {
+          loadQueues().then(() => {
+            if (syncQueue.some(q => q.status === 'pending')) processSyncQueueBlocking();
+            if (fiscalQueue.some(q => q.status === 'pending')) processFiscalQueueBlocking();
+          });
+        }
+      }, 30000);
+    });
+
+    document.getElementById("loginForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const u = document.getElementById("username").value.trim();
+      const p = document.getElementById("password").value.trim();
+      const err = document.getElementById("error-msg");
+      const result = await attemptLogin(u, p);
+      if (result.success) {
+        if (result.branches) {
+          window._branchUser = result.user;
+          document.getElementById("branchSelect").innerHTML = result.branches.map(b => `<option>${b}</option>`).join('');
+          document.getElementById("branchModal").classList.add('show');
+        } else {
+          completeLogin(result.user);
+        }
+      } else {
+        err.style.display = "block";
+      }
+    });
+
+    window.addManualItemToCart = addManualItemToCart;
+    window.completeSale = completeSale;
+    window.removeFromCart = removeFromCart;
+    window.setCurrency = setCurrency;
+    window.setPaymentMethod = setPaymentMethod;
+    window.openReports = openReports;
+    window.closeReports = closeReports;
+    window.switchView = switchView;
+    window.switchReportTab = switchReportTab;
+    window.applyFilters = applyFilters;
+    window.resetFilters = resetFilters;
+    window.openCashup = openCashup;
+    window.completeCashup = completeCashup;
+    window.cashKeypadInput = cashKeypadInput;
+    window.cashKeypadClear = cashKeypadClear;
+    window.cashKeypadEnter = cashKeypadEnter;
+    window.confirmCashPayment = confirmCashPayment;
+    window.confirmOK = confirmOK;
+    window.confirmCancel = confirmCancel;
+    window.closeModal = closeModal;
+    window.confirmBranch = confirmBranch;
+    window.showSaleDetail = showSaleDetail;
+    window.downloadReceiptPDF = downloadReceiptPDF;
+    window.processSyncQueueBlocking = processSyncQueueBlocking;
+    window.processFiscalQueueBlocking = processFiscalQueueBlocking;
+    window.retryAllFailedFiscal = retryAllFailedFiscal;
+    window.retryQueueItem = retryQueueItem;
+  </script>
+
+
+
+
+</body>
+</html>
