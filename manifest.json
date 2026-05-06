@@ -1,7 +1,7 @@
 {
   "name": "SPARK POS",
   "short_name": "SPARK",
-  "description": "Electrify Technologies",
+  "description": "Complete Point of Sale System by Electrify Technologies",
   "start_url": "/index.html",
   "display": "standalone",
   "background_color": "#003366",
@@ -28,7 +28,7 @@
       "sizes": "1080x1920",
       "type": "image/png",
       "platform": "wide",
-      "label": "Home Screen"
+      "label": "POS Screen"
     }
   ],
   "shortcuts": [
@@ -36,7 +36,14 @@
       "name": "New Sale",
       "short_name": "Sale",
       "description": "Start a new sale",
-      "url": "/index.html?action=sale",
+      "url": "/index.html",
+      "icons": [{ "src": "logo.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Cashup",
+      "short_name": "Cashup",
+      "description": "End of shift cashup",
+      "url": "/index.html",
       "icons": [{ "src": "logo.png", "sizes": "192x192" }]
     }
   ]
