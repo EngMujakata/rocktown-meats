@@ -1695,20 +1695,16 @@
       <div class="receipt-footer">Thank you!</div>
     `;
     receiptDiv.classList.add('show');
-   setTimeout(() => {
-     const pw = window.open('', '_blank');
-     if (pw) { 
-       pw.document.write(`<html><head><title>Receipt</title><style>body{font-family:monospace;max-width:80mm;margin:0;padding:10px}.receipt-header{text-align:center}.receipt-item{display:flex;justify-content:space-between}.receipt-divider{border-top:1px dashed #000;margin:8px 0}.receipt-total{font-weight:bold;text-align:right}</style></head><body>${receiptDiv.innerHTML}</body></html>`); 
-       pw.document.close(); 
-       pw.print();
-       // This closes the window AFTER print dialog is done (whether they printed or cancelled)
-       pw.onafterprint = function() { 
-         pw.close(); 
-       };
-     }
-     else window.print();
-     receiptDiv.classList.remove('show');
-   }, 100);
+    setTimeout(() => {
+      const pw = window.open('', '_blank');
+      if (pw) { 
+        pw.document.write(`<html><head><title>Receipt</title><style>body{font-family:monospace;max-width:80mm;margin:0;padding:10px}.receipt-header{text-align:center}.receipt-item{display:flex;justify-content:space-between}.receipt-divider{border-top:1px dashed #000;margin:8px 0}.receipt-total{font-weight:bold;text-align:right}</style></head><body>${receiptDiv.innerHTML}</body></html>`); 
+        pw.document.close(); pw.print(); 
+      }
+      else window.print();
+      receiptDiv.classList.remove('show');
+    }, 100);
+  }
 
   // ============================================================================
   // CASHUP FUNCTIONS
@@ -2177,7 +2173,6 @@
       }).join('')}</tbody>
       </table>
       <div style="margin-top:1rem;text-align:center;">Generated: ${new Date().toLocaleString()}</div>
-      ${currentCurrency === 'ZWG' ? `<div style="margin-top:0.5rem;text-align:center;font-size:10px;">Rate: 1 USD = ${ZWG_RATE} ZWG</div>` : ''}
     `;
     document.getElementById("zReportContent").style.display = "block";
   }
