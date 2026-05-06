@@ -514,8 +514,8 @@
   <div class="login-container" id="loginContainer">
     <div class="login-card">
       <div class="login-header">
-        <div class="login-logo"><span>SP</span></div>
-        <h1 class="login-title">SPARK POS</h1>
+        <div class="login-logo"><span>HM</span></div>
+        <h1 class="login-title">Spark POS</h1>
         <p class="login-subtitle">Login with your account</p>
       </div>
       <form id="loginForm">
@@ -846,6 +846,7 @@
   const ACCOUNTS_API_ENDPOINT = "https://script.google.com/macros/s/AKfycbwNH08Lc7N1PLcohrKY8reoL5RDZYD3AUE0eApuNeILQ0-1sPDf5B6eS_-BuQWxfvEl/exec";
   const DB_NAME = 'new_spark_rtm';
   const DB_VERSION = 1;
+  const ZWG_RATE = 45; // Hardcoded ZWG rate (USD * 45)
 
   // ============================================================================
   // GLOBAL STATE
@@ -855,7 +856,7 @@
   let selectedCustomer = null;
   let pointsUsed = 0;
   let pointsDiscount = 0;
-  let currentBranch = "Main";
+  let currentBranch = "Rocktown";
   let currentUser = null;
   let products = [];
   let customers = [];
@@ -869,6 +870,7 @@
   let allCashups = [];
   let pendingBranchUser = null;
   let syncInterval = null;
+  let currentCurrency = 'USD'; // 'USD' or 'ZWG'
   
   // Modal state
   let pendingProduct = null;
@@ -880,6 +882,10 @@
   let todayExpectedAmount = 0;
   let todaySalesCount = 0;
   let lastCashupTime = null;
+  
+  // Barcode scanner buffer
+  let barcodeBuffer = '';
+  let barcodeTimeout = null;
 
   // ============================================================================
   // FULL PAGE BLOCKING
@@ -916,6 +922,152 @@
 
   function preventPageUnload(e) { e.preventDefault(); e.returnValue = 'CRITICAL: Data is being saved. Do not close!'; return e.returnValue; }
   function preventNavigation(e) { e.preventDefault(); window.history.pushState(null, '', window.location.href); }
+
+  // ============================================================================
+  // BARCODE SCANNER
+  // ============================================================================
+  function setupBarcodeScanner() {
+    document.addEventListener('keypress', (e) => {
+      // Ignore if typing in input fields
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.isContentEditable) {
+        return;
+      }
+      
+      // Get the character
+      const char = e.key;
+      
+      // If Enter key is pressed, process the barcode
+      if (char === 'Enter') {
+        if (barcodeBuffer.length > 0) {
+          processBarcode(barcodeBuffer);
+          barcodeBuffer = '';
+        }
+        if (barcodeTimeout) {
+          clearTimeout(barcodeTimeout);
+          barcodeTimeout = null;
+        }
+        return;
+      }
+      
+      // Add character to buffer
+      barcodeBuffer += char;
+      
+      // Clear buffer after 100ms of no input
+      if (barcodeTimeout) clearTimeout(barcodeTimeout);
+      barcodeTimeout = setTimeout(() => {
+        barcodeBuffer = '';
+      }, 100);
+    });
+  }
+  
+  function processBarcode(barcode) {
+    console.log('Processing barcode:', barcode);
+    
+    // Parse barcode format: 20 + product_code + weight
+    // Example: 2010090001861 -> 20=prefix, 1009=product code, 0001861=weight (0.001861)
+    const barcodeStr = barcode.toString().trim();
+    
+    // Check if it matches the expected format (starts with 20 and has at least 8 digits)
+    if (barcodeStr.startsWith('20') && barcodeStr.length >= 8) {
+      // Extract product code (digits after the 20 prefix)
+      const afterPrefix = barcodeStr.substring(2);
+      
+      // Product code is the first 4 digits after prefix (or up to remaining length)
+      let productCode = '';
+      let weightStr = '';
+      
+      if (afterPrefix.length >= 4) {
+        productCode = afterPrefix.substring(0, 4);
+        weightStr = afterPrefix.substring(4);
+      } else {
+        productCode = afterPrefix;
+        weightStr = '';
+      }
+      
+      // Parse weight: last digits represent weight where last 4 digits are after decimal
+      // Example: 0001861 -> 000.1861 (0.1861)
+      let weight = 0;
+      if (weightStr.length >= 4) {
+        const beforeDecimal = weightStr.substring(0, weightStr.length - 4);
+        const afterDecimal = weightStr.substring(weightStr.length - 4);
+        weight = parseFloat(beforeDecimal + '.' + afterDecimal);
+      } else if (weightStr.length > 0) {
+        weight = parseFloat(weightStr) / 10000;
+      }
+      
+      // If weight is 0 or invalid, default to 1
+      if (isNaN(weight) || weight <= 0) {
+        weight = 1;
+      }
+      
+      console.log(`Parsed: Product Code=${productCode}, Weight=${weight}`);
+      
+      // Find product by code
+      const product = products.find(p => p.code === productCode);
+      
+      if (product) {
+        if (product.stock <= 0) {
+          showAlert("Out of Stock", `${product.name} is out of stock!`);
+          return;
+        }
+        
+        // For weighted items, use the scanned weight
+        if (product.item_type !== 'each') {
+          addToCartWithQuantity(product, weight);
+        } else {
+          // For each items, weight becomes quantity (rounded to nearest whole number)
+          const qty = Math.max(1, Math.round(weight));
+          addToCartWithQuantity(product, qty);
+        }
+      } else {
+        showAlert("Product Not Found", `No product found with code: ${productCode}`);
+      }
+    } else {
+      // Try to find product by full barcode as code
+      const product = products.find(p => p.code === barcodeStr);
+      if (product) {
+        if (product.stock <= 0) {
+          showAlert("Out of Stock", `${product.name} is out of stock!`);
+          return;
+        }
+        addToCartWithQuantity(product, 1);
+      } else {
+        showAlert("Invalid Barcode", `Could not parse barcode: ${barcode}`);
+      }
+    }
+  }
+
+  // ============================================================================
+  // CURRENCY FUNCTIONS
+  // ============================================================================
+  function formatPrice(usdPrice) {
+    if (currentCurrency === 'ZWG') {
+      return `ZWG ${(usdPrice * ZWG_RATE).toFixed(2)}`;
+    }
+    return `$${usdPrice.toFixed(2)}`;
+  }
+  
+  function getDisplayPrice(usdPrice) {
+    if (currentCurrency === 'ZWG') {
+      return usdPrice * ZWG_RATE;
+    }
+    return usdPrice;
+  }
+  
+  function switchCurrency() {
+    currentCurrency = currentCurrency === 'USD' ? 'ZWG' : 'USD';
+    const currencyBtn = document.getElementById('currencyToggle');
+    if (currencyBtn) {
+      currencyBtn.textContent = currentCurrency === 'USD' ? 'USD' : 'ZWG';
+    }
+    renderCart();
+    displayProducts();
+    loadSummary();
+  }
+  
+  function getCurrencySymbol() {
+    return currentCurrency === 'ZWG' ? 'ZWG ' : '$';
+  }
 
   // ============================================================================
   // INDEXEDDB
@@ -1012,9 +1164,22 @@
       } catch (error) { reject(error); }
     });
   }
+  
+  async function deleteFromIndexedDB(storeName, key) {
+    return new Promise((resolve, reject) => {
+      if (!db) { reject(new Error('Database not initialized')); return; }
+      try {
+        const transaction = db.transaction([storeName], 'readwrite');
+        const store = transaction.objectStore(storeName);
+        const request = store.delete(key);
+        request.onsuccess = () => resolve();
+        request.onerror = (e) => reject(e.target.error);
+      } catch (error) { reject(error); }
+    });
+  }
 
   // ============================================================================
-  // QUANTITY KEYPAD MODAL - FIXED FOR EACH/WEIGHT
+  // QUANTITY KEYPAD MODAL
   // ============================================================================
   function showQuantityModal(product) {
     return new Promise((resolve) => {
@@ -1024,7 +1189,6 @@
       
       document.getElementById("productNameDisplay").textContent = product.name || product.product;
       
-      // FIXED: Item Type logic - empty string = weighted, "each" = pieces
       if (pendingProductItemType === 'each') {
         document.getElementById("productTypeDisplay").textContent = 'Pieces (Whole numbers only)';
         document.getElementById("decimalBtn").style.display = 'none';
@@ -1041,7 +1205,6 @@
   }
 
   function keypadInput(char) {
-    // FIXED: Strict whole number enforcement for "each" items
     if (pendingProductItemType === 'each' && char === '.') return;
     if (char === '.' && currentQuantity.includes('.')) return;
     
@@ -1062,7 +1225,6 @@
     let qty = parseFloat(currentQuantity);
     if (isNaN(qty) || qty <= 0) { alert('Please enter a valid quantity'); return; }
     
-    // FIXED: Floor for "each" items
     if (pendingProductItemType === 'each') {
       qty = Math.floor(qty);
     }
@@ -1074,12 +1236,13 @@
   // ============================================================================
   // CASH PAYMENT KEYPAD MODAL
   // ============================================================================
-  function showCashModal(total) {
+  function showCashModal(totalUSD) {
     return new Promise((resolve) => {
-      pendingSaleForCash = { total };
+      const displayTotal = currentCurrency === 'ZWG' ? totalUSD * ZWG_RATE : totalUSD;
+      pendingSaleForCash = { totalUSD, totalDisplay: displayTotal };
       cashModalResolve = resolve;
       
-      document.getElementById("cashTotalDue").textContent = `$${total.toFixed(2)}`;
+      document.getElementById("cashTotalDue").textContent = `${getCurrencySymbol()}${displayTotal.toFixed(2)}`;
       currentQuantity = '0';
       document.getElementById("cashReceivedDisplay").textContent = '0';
       document.getElementById("changeDisplay").style.display = 'none';
@@ -1105,32 +1268,39 @@
   }
 
   function calculateChange() {
-    const received = parseFloat(currentQuantity) || 0;
-    const total = pendingSaleForCash?.total || 0;
-    const change = received - total;
+    const receivedDisplay = parseFloat(currentQuantity) || 0;
+    const totalDisplay = pendingSaleForCash?.totalDisplay || 0;
+    const changeDisplay = receivedDisplay - totalDisplay;
     
-    const changeDisplay = document.getElementById("changeDisplay");
+    const changeDiv = document.getElementById("changeDisplay");
     const changeAmount = document.getElementById("changeAmount");
     const confirmBtn = document.getElementById("confirmCashBtn");
     
-    if (received > 0) {
-      changeDisplay.style.display = 'block';
-      changeAmount.textContent = `${change >= 0 ? '' : '-'}$${Math.abs(change).toFixed(2)}`;
-      changeAmount.className = `change-amount ${change >= 0 ? 'positive' : 'negative'}`;
-      confirmBtn.disabled = received < total;
+    if (receivedDisplay > 0) {
+      changeDiv.style.display = 'block';
+      changeAmount.textContent = `${changeDisplay >= 0 ? '' : '-'}${getCurrencySymbol()}${Math.abs(changeDisplay).toFixed(2)}`;
+      changeAmount.className = `change-amount ${changeDisplay >= 0 ? 'positive' : 'negative'}`;
+      confirmBtn.disabled = receivedDisplay < totalDisplay;
     } else {
-      changeDisplay.style.display = 'none';
+      changeDiv.style.display = 'none';
       confirmBtn.disabled = true;
     }
   }
 
   function cashKeypadEnter() {
-    const received = parseFloat(currentQuantity) || 0;
-    const total = pendingSaleForCash?.total || 0;
-    if (received < total) { alert('Cash received is less than total amount'); return; }
+    const receivedDisplay = parseFloat(currentQuantity) || 0;
+    const totalDisplay = pendingSaleForCash?.totalDisplay || 0;
+    if (receivedDisplay < totalDisplay) { alert('Cash received is less than total amount'); return; }
+    
+    // Calculate received in USD
+    const receivedUSD = currentCurrency === 'ZWG' ? receivedDisplay / ZWG_RATE : receivedDisplay;
+    const changeUSD = receivedUSD - (pendingSaleForCash?.totalUSD || 0);
     
     document.getElementById("cashModal").classList.remove('active');
-    if (cashModalResolve) { cashModalResolve({ received, change: received - total }); cashModalResolve = null; }
+    if (cashModalResolve) { 
+      cashModalResolve({ received: receivedUSD, change: changeUSD, receivedDisplay, changeDisplay: receivedDisplay - totalDisplay }); 
+      cashModalResolve = null; 
+    }
   }
 
   function confirmCashPayment() { cashKeypadEnter(); }
@@ -1164,7 +1334,7 @@
   }
 
   // ============================================================================
-  // CLOUD SYNC
+  // CLOUD SYNC (Always sends USD values)
   // ============================================================================
   async function syncSaleToCloudBlocking(sale) {
     return new Promise(async (resolve) => {
@@ -1314,7 +1484,7 @@
       const card = document.createElement("div");
       card.className = `product-card${p.stock <= 0 ? ' out-of-stock' : ''}`;
       card.onclick = () => p.stock > 0 && handleProductClick(p);
-      card.innerHTML = `<div class="product-name">${escapeHtml(p.name)}</div><div class="product-meta"><span>Stock: ${p.stock}</span></div><div class="product-price">$${p.price.toFixed(2)}</div>`;
+      card.innerHTML = `<div class="product-name">${escapeHtml(p.name)}</div><div class="product-meta"><span>Stock: ${p.stock}</span></div><div class="product-price">${formatPrice(p.price)}</div>`;
       list.appendChild(card);
     });
   }
@@ -1352,9 +1522,11 @@
   function renderCart() {
     const container = document.getElementById("cart-items");
     container.innerHTML = "";
-    let subtotal = 0;
+    let subtotalUSD = 0;
     cart.forEach((item, i) => {
-      subtotal += item.quantity * item.price;
+      subtotalUSD += item.quantity * item.price;
+      const displayPrice = getDisplayPrice(item.price);
+      const displayTotal = getDisplayPrice(item.quantity * item.price);
       const div = document.createElement("div");
       div.className = "cart-item";
       div.innerHTML = `
@@ -1366,15 +1538,17 @@
               <span class="quantity-display">${item.quantity.toFixed(item.item_type === 'each' ? 0 : 3)}</span>
               <button class="quantity-btn" onclick="updateQuantity(${i}, ${item.quantity + (item.item_type === 'each' ? 1 : 0.1)})">+</button>
             </div>
-            <span class="price-edit" onclick="editPrice(${i})">$${item.price.toFixed(2)}</span>
+            <span class="price-edit" onclick="editPrice(${i})">${formatPrice(item.price)}</span>
             <button class="delete-btn" onclick="removeFromCart(${i})"><i class="fas fa-trash"></i></button>
           </div>
         </div>
-        <div class="cart-item-total">$${(item.quantity * item.price).toFixed(2)}</div>
+        <div class="cart-item-total">${getCurrencySymbol()}${displayTotal.toFixed(2)}</div>
       `;
       container.appendChild(div);
     });
-    document.getElementById("cart-total").textContent = `Total: $${Math.max(0, subtotal - pointsDiscount).toFixed(2)}`;
+    const totalUSD = Math.max(0, subtotalUSD - pointsDiscount);
+    const displayTotal = getDisplayPrice(totalUSD);
+    document.getElementById("cart-total").textContent = `Total: ${getCurrencySymbol()}${displayTotal.toFixed(2)}`;
   }
 
   function updateQuantity(index, qty) {
@@ -1384,7 +1558,7 @@
   }
 
   function removeFromCart(index) { cart.splice(index, 1); renderCart(); }
-  function editPrice(index) { const np = prompt("Enter new price:", cart[index].price); if (np && !isNaN(np) && parseFloat(np) > 0) { cart[index].price = parseFloat(np); renderCart(); } }
+  function editPrice(index) { const np = prompt("Enter new price (USD):", cart[index].price); if (np && !isNaN(np) && parseFloat(np) > 0) { cart[index].price = parseFloat(np); renderCart(); } }
 
   // ============================================================================
   // CUSTOMER FUNCTIONS
@@ -1431,12 +1605,13 @@
       if (product.stock < item.quantity) { await showAlert("Insufficient Stock", `Only ${product.stock} available for ${item.name}`); return; }
     }
     
-    const subtotal = cart.reduce((s, i) => s + i.quantity * i.price, 0);
-    const total = Math.max(0, subtotal - pointsDiscount);
+    const subtotalUSD = cart.reduce((s, i) => s + i.quantity * i.price, 0);
+    const totalUSD = Math.max(0, subtotalUSD - pointsDiscount);
+    const displayTotal = getDisplayPrice(totalUSD);
     
-    if (!await showConfirm("Confirm Sale", `Complete sale for $${total.toFixed(2)}?`)) return;
+    if (!await showConfirm("Confirm Sale", `Complete sale for ${getCurrencySymbol()}${displayTotal.toFixed(2)}?`)) return;
     
-    const cashResult = await showCashModal(total);
+    const cashResult = await showCashModal(totalUSD);
     if (!cashResult) return;
     
     isProcessingSale = true;
@@ -1445,14 +1620,15 @@
     
     try {
       const receiptNo = generateReceiptNumber();
-      const profit = cart.reduce((s, i) => s + i.quantity * (i.price - i.cost), 0);
+      const profitUSD = cart.reduce((s, i) => s + i.quantity * (i.price - i.cost), 0);
       
       const sale = {
         receipt_no: receiptNo, date: new Date().toISOString().split('T')[0], time: new Date().toLocaleTimeString(),
         cashier: currentUser?.username || "Admin", branch: currentBranch,
-        items: cart.map(i => ({ name: i.name, code: i.code, quantity: i.quantity, price: i.price, cost: i.cost })),
-        subtotal, pointsUsed, pointsDiscount, total, profit,
+        items: cart.map(i => ({ name: i.name, code: i.code, quantity: i.quantity, price: i.price, cost: i.cost, item_type: i.item_type })),
+        subtotal: subtotalUSD, pointsUsed, pointsDiscount, total: totalUSD, profit: profitUSD,
         cashReceived: cashResult.received, change: cashResult.change,
+        currency: currentCurrency, zwgRate: ZWG_RATE,
         synced: false, timestamp: Date.now()
       };
       
@@ -1461,8 +1637,8 @@
       
       cart.forEach(i => { const p = products.find(p => String(p.id) === i.id); if (p) p.stock -= i.quantity; });
       
-      const totalSales = parseFloat(localStorage.getItem("totalSales") || 0) + total;
-      const totalProfit = parseFloat(localStorage.getItem("totalProfit") || 0) + profit;
+      const totalSales = parseFloat(localStorage.getItem("totalSales") || 0) + totalUSD;
+      const totalProfit = parseFloat(localStorage.getItem("totalProfit") || 0) + profitUSD;
       localStorage.setItem("totalSales", totalSales.toFixed(2));
       localStorage.setItem("totalProfit", totalProfit.toFixed(2));
       
@@ -1480,9 +1656,9 @@
       document.getElementById("completeSaleBtn").disabled = false;
       isProcessingSale = false;
       
-      await showAlert("Success", `Sale complete!\nReceipt: ${receiptNo}\nTotal: $${total.toFixed(2)}\nCash: $${cashResult.received.toFixed(2)}\nChange: $${cashResult.change.toFixed(2)}`);
+      await showAlert("Success", `Sale complete!\nReceipt: ${receiptNo}\nTotal: ${getCurrencySymbol()}${displayTotal.toFixed(2)}\nCash: ${getCurrencySymbol()}${cashResult.receivedDisplay?.toFixed(2) || cashResult.received.toFixed(2)}\nChange: ${getCurrencySymbol()}${cashResult.changeDisplay?.toFixed(2) || cashResult.change.toFixed(2)}`);
       
-      printReceipt(sale);
+      printReceipt(sale, cashResult);
     } catch (error) {
       console.error('❌ SALE FAILED:', error);
       unblockEverything(); document.getElementById("completeSaleBtn").disabled = false; isProcessingSale = false;
@@ -1490,28 +1666,50 @@
     }
   }
 
-  function printReceipt(sale) {
-    const itemsHtml = sale.items.map(item => `<div class="receipt-item"><span>${escapeHtml(item.name)} x${item.quantity.toFixed(item.item_type === 'each' ? 0 : 3)}</span><span>$${(item.quantity * item.price).toFixed(2)}</span></div>`).join('');
+  function printReceipt(sale, cashResult) {
+    const displayTotal = getDisplayPrice(sale.total);
+    const displayCashReceived = currentCurrency === 'ZWG' ? (cashResult?.receivedDisplay || sale.cashReceived * ZWG_RATE) : sale.cashReceived;
+    const displayChange = currentCurrency === 'ZWG' ? (cashResult?.changeDisplay || sale.change * ZWG_RATE) : sale.change;
+    
+    const itemsHtml = sale.items.map(item => {
+      const displayPrice = getDisplayPrice(item.price);
+      const displayItemTotal = getDisplayPrice(item.quantity * item.price);
+      return `<div class="receipt-item"><span>${escapeHtml(item.name)} x${item.quantity.toFixed(item.item_type === 'each' ? 0 : 3)}</span><span>${getCurrencySymbol()}${displayItemTotal.toFixed(2)}</span></div>`;
+    }).join('');
+    
     const receiptDiv = document.getElementById("receipt-print");
     receiptDiv.innerHTML = `
-      <div class="receipt-header"><div style="font-weight:bold;">ROCKTOWN MEATS</div><div style="font-weight:light;">62 Herbert Chitepo Street, Mutare</div><div class="receipt-info">${sale.receipt_no}</div><div class="receipt-info">${sale.date} ${sale.time}</div><div class="receipt-info">Cashier: ${sale.cashier}</div></div>
-      <div class="receipt-divider"></div><div class="receipt-items">${itemsHtml}</div><div class="receipt-divider"></div>
-      <div class="receipt-total">Total: $${sale.total.toFixed(2)}</div>
-      <div class="receipt-info">Cash Received: $${(sale.cashReceived || 0).toFixed(2)}</div>
-      <div class="receipt-info">Change: $${(sale.change || 0).toFixed(2)}</div>
+      <div class="receipt-header">
+        <div style="font-weight:bold;">Rocktown Meats MUTARE</div>
+        <div style="font-weight:light;">5 First Street, Mutare</div>
+        <div class="receipt-info">${sale.receipt_no}</div>
+        <div class="receipt-info">${sale.date} ${sale.time}</div>
+        <div class="receipt-info">Cashier: ${sale.cashier}</div>
+        <div class="receipt-info">Currency: ${sale.currency || 'USD'}</div>
+      </div>
+      <div class="receipt-divider"></div>
+      <div class="receipt-items">${itemsHtml}</div>
+      <div class="receipt-divider"></div>
+      <div class="receipt-total">Total: ${getCurrencySymbol()}${displayTotal.toFixed(2)}</div>
+      <div class="receipt-info">Cash Received: ${getCurrencySymbol()}${displayCashReceived.toFixed(2)}</div>
+      <div class="receipt-info">Change: ${getCurrencySymbol()}${displayChange.toFixed(2)}</div>
+      ${sale.currency === 'ZWG' ? `<div class="receipt-info" style="font-size:9px;">Rate: 1 USD = ${ZWG_RATE} ZWG</div>` : ''}
       <div class="receipt-footer">Thank you!</div>
     `;
     receiptDiv.classList.add('show');
     setTimeout(() => {
       const pw = window.open('', '_blank');
-      if (pw) { pw.document.write(`<html><head><title>Receipt</title><style>body{font-family:monospace;max-width:80mm;margin:0;padding:10px}.receipt-header{text-align:center}.receipt-item{display:flex;justify-content:space-between}.receipt-divider{border-top:1px dashed #000;margin:8px 0}.receipt-total{font-weight:bold;text-align:right}</style></head><body>${receiptDiv.innerHTML}</body></html>`); pw.document.close(); pw.print(); }
+      if (pw) { 
+        pw.document.write(`<html><head><title>Receipt</title><style>body{font-family:monospace;max-width:80mm;margin:0;padding:10px}.receipt-header{text-align:center}.receipt-item{display:flex;justify-content:space-between}.receipt-divider{border-top:1px dashed #000;margin:8px 0}.receipt-total{font-weight:bold;text-align:right}</style></head><body>${receiptDiv.innerHTML}</body></html>`); 
+        pw.document.close(); pw.print(); 
+      }
       else window.print();
       receiptDiv.classList.remove('show');
     }, 100);
   }
 
   // ============================================================================
-  // CASHUP FUNCTIONS - ONCE PER SHIFT LOGIC
+  // CASHUP FUNCTIONS
   // ============================================================================
   async function getLastCashupTime(cashier) {
     const cashups = await getFromIndexedDB('cashups');
@@ -1529,7 +1727,6 @@
     const today = new Date().toISOString().split('T')[0];
     const sales = await getFromIndexedDB('sales');
     
-    // Filter sales: if never cashed up, get all today's sales. If cashed up before, only get sales after last cashup
     let relevantSales;
     if (lastCashupTime) {
       relevantSales = sales.filter(s => s.cashier === cashier && (s.timestamp || 0) > lastCashupTime);
@@ -1545,7 +1742,6 @@
     todayExpectedAmount = relevantSales.reduce((sum, s) => sum + (s.total || 0), 0);
     todaySalesCount = relevantSales.length;
     
-    // Hide expected amount initially
     document.getElementById("cashupExpected").textContent = '****';
     document.getElementById("cashupSalesCount").textContent = todaySalesCount;
     document.getElementById("cashAtHandInput").value = '';
@@ -1582,7 +1778,6 @@
     const declared = cashAtHand + bank;
     const variance = declared - todayExpectedAmount;
     
-    // Show the expected amount and variance
     document.getElementById("cashupExpected").textContent = `$${todayExpectedAmount.toFixed(2)}`;
     document.getElementById("cashupVariance").textContent = `${variance >= 0 ? '+' : ''}$${variance.toFixed(2)}`;
     document.getElementById("cashupVariance").style.color = variance >= 0 ? 'var(--secondary)' : 'var(--danger)';
@@ -1630,7 +1825,7 @@
     receiptDiv.innerHTML = `
       <div class="receipt-header"><div style="font-weight:bold;">CASHUP REPORT</div><div class="receipt-info">${cashup.date} ${cashup.time}</div><div class="receipt-info">Cashier: ${cashup.cashier}</div><div class="receipt-info">Branch: ${cashup.branch}</div></div>
       <div class="receipt-divider"></div>
-      <div class="receipt-item"><span>Expected:</span><span>$${cashup.expected.toFixed(2)}</span></div>
+      <div class="receipt-item"><span>Expected (USD):</span><span>$${cashup.expected.toFixed(2)}</span></div>
       <div class="receipt-item"><span>Cash at Hand:</span><span>$${cashup.cashAtHand.toFixed(2)}</span></div>
       <div class="receipt-item"><span>Bank:</span><span>$${cashup.bank.toFixed(2)}</span></div>
       <div class="receipt-item"><span>Declared:</span><span>$${cashup.totalDeclared.toFixed(2)}</span></div>
@@ -1652,18 +1847,20 @@
   // SUMMARY
   // ============================================================================
   function loadSummary() {
-    const totalSales = parseFloat(localStorage.getItem("totalSales") || 0);
-    const totalProfit = parseFloat(localStorage.getItem("totalProfit") || 0);
+    const totalSalesUSD = parseFloat(localStorage.getItem("totalSales") || 0);
+    const totalProfitUSD = parseFloat(localStorage.getItem("totalProfit") || 0);
+    const displaySales = getDisplayPrice(totalSalesUSD);
+    const displayProfit = getDisplayPrice(totalProfitUSD);
     document.getElementById("summary").innerHTML = `
       <div class="summary-item"><div class="summary-label">Products</div><div class="summary-value">${products.length}</div></div>
-      <div class="summary-item"><div class="summary-label">Sales</div><div class="summary-value">$${totalSales.toFixed(2)}</div></div>
-      <div class="summary-item"><div class="summary-label">Profit</div><div class="summary-value profit">$${totalProfit.toFixed(2)}</div></div>
-      <div class="summary-item"><div class="summary-label">Margin</div><div class="summary-value">${totalSales > 0 ? ((totalProfit/totalSales)*100).toFixed(1) : 0}%</div></div>
+      <div class="summary-item"><div class="summary-label">Sales</div><div class="summary-value">${getCurrencySymbol()}${displaySales.toFixed(2)}</div></div>
+      <div class="summary-item"><div class="summary-label">Profit</div><div class="summary-value profit">${getCurrencySymbol()}${displayProfit.toFixed(2)}</div></div>
+      <div class="summary-item"><div class="summary-label">Margin</div><div class="summary-value">${totalSalesUSD > 0 ? ((totalProfitUSD/totalSalesUSD)*100).toFixed(1) : 0}%</div></div>
     `;
   }
 
   // ============================================================================
-  // REPORTS - DIFFERENT VIEWS FOR ADMIN VS CASHIER
+  // REPORTS
   // ============================================================================
   function openReports() {
     document.getElementById("reportsPanel").classList.add('show');
@@ -1705,7 +1902,6 @@
     if (tab==='zreport') populateZCashiers();
     if (tab==='cashups') loadCashupHistory();
     
-    // Hide tabs that cashiers shouldn't see
     if (!isAdmin) {
       document.querySelectorAll('.tab').forEach(t => {
         if (t.textContent.includes('Z-Report') || t.textContent.includes('Cashups')) {
@@ -1722,7 +1918,6 @@
     const isAdmin = (currentUser?.Role || currentUser?.role || '').toLowerCase() === 'admin';
     const currentCashier = currentUser?.username;
     
-    // Filter for cashier - only show their own sales
     let displaySales = isAdmin ? allSales : allSales.filter(s => s.cashier === currentCashier);
     
     renderSalesTable(displaySales, isAdmin); 
@@ -1730,15 +1925,16 @@
   
   function renderSalesTable(sales, isAdmin) {
     const tbody = document.getElementById("salesTableBody");
-    let totalSales = 0, totalProfit = 0;
+    let totalSalesUSD = 0, totalProfitUSD = 0;
     
     tbody.innerHTML = sales.map(sale => {
-      totalSales += sale.total || 0;
-      totalProfit += sale.profit || 0;
+      totalSalesUSD += sale.total || 0;
+      totalProfitUSD += sale.profit || 0;
       const itemCount = sale.items?.length || 0;
       const syncedIcon = sale.synced ? '✅' : '⏳';
+      const displayTotal = getDisplayPrice(sale.total || 0);
+      const displayProfit = getDisplayPrice(sale.profit || 0);
       
-      // Cashier view: no totals, simplified display
       if (!isAdmin) {
         return `<tr onclick="showSaleDetail('${sale.receipt_no}')">
           <td>${syncedIcon} ${sale.receipt_no}</td>
@@ -1748,27 +1944,27 @@
           <td>--</td>
           <td>--</td>
           <td>--</td>
-        </tr>`;
+         </tr>`;
       }
       
-      // Admin view: full details with reprint
       return `<tr onclick="showSaleDetail('${sale.receipt_no}')">
         <td>${syncedIcon} ${sale.receipt_no}</td>
         <td>${sale.date}</td>
         <td>${sale.time}</td>
         <td>${sale.cashier}</td>
         <td>${itemCount}</td>
-        <td>$${(sale.total || 0).toFixed(2)}</td>
-        <td class="profit">$${(sale.profit || 0).toFixed(2)}</td>
+        <td>${getCurrencySymbol()}${displayTotal.toFixed(2)}</td>
+        <td class="profit">${getCurrencySymbol()}${displayProfit.toFixed(2)}</td>
         <td><button class="btn btn-outline" style="padding:0.25rem 0.5rem;" onclick="event.stopPropagation();reprintReceipt('${sale.receipt_no}')"><i class="fas fa-print"></i></button></td>
-      </tr>`;
+       </tr>`;
     }).join('');
     
-    // Only show totals for admin
     if (isAdmin) {
-      document.getElementById("filteredTotalSales").textContent = `$${totalSales.toFixed(2)}`;
-      document.getElementById("filteredTotalProfit").textContent = `$${totalProfit.toFixed(2)}`;
-      document.getElementById("filteredMargin").textContent = `${totalSales > 0 ? ((totalProfit/totalSales)*100).toFixed(1) : 0}%`;
+      const displayTotalSales = getDisplayPrice(totalSalesUSD);
+      const displayTotalProfit = getDisplayPrice(totalProfitUSD);
+      document.getElementById("filteredTotalSales").textContent = `${getCurrencySymbol()}${displayTotalSales.toFixed(2)}`;
+      document.getElementById("filteredTotalProfit").textContent = `${getCurrencySymbol()}${displayTotalProfit.toFixed(2)}`;
+      document.getElementById("filteredMargin").textContent = `${totalSalesUSD > 0 ? ((totalProfitUSD/totalSalesUSD)*100).toFixed(1) : 0}%`;
     } else {
       document.getElementById("filteredTotalSales").textContent = '--';
       document.getElementById("filteredTotalProfit").textContent = '--';
@@ -1812,18 +2008,28 @@
     currentSaleForReprint = sale;
     const isAdmin = (currentUser?.Role || currentUser?.role || '').toLowerCase() === 'admin';
     
-    const itemsHtml = sale.items.map(i => `<tr><td>${escapeHtml(i.name)}</td><td>${i.quantity.toFixed(i.item_type === 'each' ? 0 : 3)}</td><td>$${i.price.toFixed(2)}</td><td>$${(i.quantity*i.price).toFixed(2)}</td></tr>`).join('');
+    const itemsHtml = sale.items.map(i => {
+      const displayPrice = getDisplayPrice(i.price);
+      const displayTotal = getDisplayPrice(i.quantity * i.price);
+      return `<tr><td>${escapeHtml(i.name)}</td><td>${i.quantity.toFixed(i.item_type === 'each' ? 0 : 3)}</td><td>${getCurrencySymbol()}${displayPrice.toFixed(2)}</td><td>${getCurrencySymbol()}${displayTotal.toFixed(2)}</td></tr>`;
+    }).join('');
+    
+    const displayTotal = getDisplayPrice(sale.total || 0);
+    const displayProfit = getDisplayPrice(sale.profit || 0);
+    const displayCashReceived = getDisplayPrice(sale.cashReceived || 0);
+    const displayChange = getDisplayPrice(sale.change || 0);
     
     let detailHtml = `
       <p><strong>Receipt:</strong> ${sale.receipt_no} ${sale.synced?'✅ Synced':'⏳ Pending'}</p>
       <p><strong>Date:</strong> ${sale.date} ${sale.time}</p>
       <p><strong>Cashier:</strong> ${sale.cashier}</p>
+      <p><strong>Currency:</strong> ${sale.currency || 'USD'}</p>
     `;
     
     if (isAdmin) {
       detailHtml += `
-        <p><strong>Cash Received:</strong> $${(sale.cashReceived||0).toFixed(2)} | <strong>Change:</strong> $${(sale.change||0).toFixed(2)}</p>
-        <p><strong>Total:</strong> $${sale.total.toFixed(2)} | <strong>Profit:</strong> $${(sale.profit||0).toFixed(2)}</p>
+        <p><strong>Cash Received:</strong> ${getCurrencySymbol()}${displayCashReceived.toFixed(2)} | <strong>Change:</strong> ${getCurrencySymbol()}${displayChange.toFixed(2)}</p>
+        <p><strong>Total:</strong> ${getCurrencySymbol()}${displayTotal.toFixed(2)} | <strong>Profit:</strong> ${getCurrencySymbol()}${displayProfit.toFixed(2)}</p>
       `;
     }
     
@@ -1839,7 +2045,7 @@
       showAlert("Access Denied", "Only admin can reprint receipts");
       return;
     }
-    if (currentSaleForReprint) printReceipt(currentSaleForReprint); 
+    if (currentSaleForReprint) printReceipt(currentSaleForReprint, null); 
     closeModal('saleDetailModal'); 
   }
   
@@ -1850,7 +2056,7 @@
       return;
     }
     const sale = allSales.find(s => s.receipt_no === receiptNo); 
-    if (sale) printReceipt(sale); 
+    if (sale) printReceipt(sale, null); 
   }
   
   async function loadProductSales() {
@@ -1871,23 +2077,26 @@
       sale.items?.forEach(item => { 
         if (term && !item.name.toLowerCase().includes(term)) return;
         const k = item.code || item.name; 
-        const e = productMap.get(k) || {name: item.name, code: item.code, quantity: 0, sales: 0, cost: 0};
+        const e = productMap.get(k) || {name: item.name, code: item.code, quantity: 0, salesUSD: 0, costUSD: 0};
         e.quantity += item.quantity || 0; 
-        e.sales += (item.quantity * item.price) || 0; 
-        e.cost += (item.quantity * item.cost) || 0; 
+        e.salesUSD += (item.quantity * item.price) || 0; 
+        e.costUSD += (item.quantity * item.cost) || 0; 
         productMap.set(k, e);
       });
     });
     
-    const products = Array.from(productMap.values()).sort((a,b) => b.sales - a.sales);
-    document.getElementById("productSalesBody").innerHTML = products.map(p => {
-      const profit = p.sales - p.cost;
-      const margin = p.sales > 0 ? (profit / p.sales * 100) : 0;
+    const productsArr = Array.from(productMap.values()).sort((a,b) => b.salesUSD - a.salesUSD);
+    document.getElementById("productSalesBody").innerHTML = productsArr.map(p => {
+      const profitUSD = p.salesUSD - p.costUSD;
+      const margin = p.salesUSD > 0 ? (profitUSD / p.salesUSD * 100) : 0;
+      const displaySales = getDisplayPrice(p.salesUSD);
+      const displayCost = getDisplayPrice(p.costUSD);
+      const displayProfit = getDisplayPrice(profitUSD);
       return `<tr>
         <td>${p.code || '-'}</td>
         <td>${escapeHtml(p.name)}</td>
         <td>${p.quantity.toFixed(2)}</td>
-        ${isAdmin ? `<td>$${p.sales.toFixed(2)}</td><td>$${p.cost.toFixed(2)}</td><td class="profit">$${profit.toFixed(2)}</td><td>${margin.toFixed(1)}%</td>` : '<td>--</td><td>--</td><td>--</td><td>--</td>'}
+        ${isAdmin ? `<td>${getCurrencySymbol()}${displaySales.toFixed(2)}</td><td>${getCurrencySymbol()}${displayCost.toFixed(2)}</td><td class="profit">${getCurrencySymbol()}${displayProfit.toFixed(2)}</td><td>${margin.toFixed(1)}%</td>` : '<td>--</td><td>--</td><td>--</td><td>--</td>'}
       </tr>`;
     }).join('');
   }
@@ -1919,30 +2128,33 @@
       return; 
     }
     
-    let totalSales = 0, totalProfit = 0, itemCount = 0, totalCash = 0; 
+    let totalSalesUSD = 0, totalProfitUSD = 0, itemCount = 0, totalCashUSD = 0; 
     const productMap = new Map();
     
     sales.forEach(sale => { 
-      totalSales += sale.total || 0; 
-      totalProfit += sale.profit || 0; 
-      totalCash += sale.cashReceived || 0;
+      totalSalesUSD += sale.total || 0; 
+      totalProfitUSD += sale.profit || 0; 
+      totalCashUSD += sale.cashReceived || 0;
       sale.items?.forEach(item => { 
         itemCount += item.quantity || 0; 
-        const e = productMap.get(item.code) || {name: item.name, quantity: 0, sales: 0}; 
+        const e = productMap.get(item.code) || {name: item.name, quantity: 0, salesUSD: 0}; 
         e.quantity += item.quantity || 0; 
-        e.sales += (item.quantity * item.price) || 0; 
+        e.salesUSD += (item.quantity * item.price) || 0; 
         productMap.set(item.code, e); 
       });
     });
     
-    const margin = totalSales > 0 ? (totalProfit / totalSales * 100) : 0;
+    const margin = totalSalesUSD > 0 ? (totalProfitUSD / totalSalesUSD * 100) : 0;
+    const displayTotalSales = getDisplayPrice(totalSalesUSD);
+    const displayTotalProfit = getDisplayPrice(totalProfitUSD);
+    const displayTotalCash = getDisplayPrice(totalCashUSD);
     
     let statsHtml = '';
     if (isAdmin) {
       statsHtml = `
-        <div class="z-stat"><div class="z-stat-value">$${totalSales.toFixed(2)}</div><div class="z-stat-label">Expected</div></div>
-        <div class="z-stat"><div class="z-stat-value">$${totalCash.toFixed(2)}</div><div class="z-stat-label">Received</div></div>
-        <div class="z-stat"><div class="z-stat-value">$${totalProfit.toFixed(2)}</div><div class="z-stat-label">Profit</div></div>
+        <div class="z-stat"><div class="z-stat-value">${getCurrencySymbol()}${displayTotalSales.toFixed(2)}</div><div class="z-stat-label">Expected</div></div>
+        <div class="z-stat"><div class="z-stat-value">${getCurrencySymbol()}${displayTotalCash.toFixed(2)}</div><div class="z-stat-label">Received</div></div>
+        <div class="z-stat"><div class="z-stat-value">${getCurrencySymbol()}${displayTotalProfit.toFixed(2)}</div><div class="z-stat-label">Profit</div></div>
         <div class="z-stat"><div class="z-stat-value">${margin.toFixed(1)}%</div><div class="z-stat-label">Margin</div></div>
       `;
     } else {
@@ -1953,13 +2165,17 @@
     }
     
     document.getElementById("zReportContent").innerHTML = `
-      <div class="z-report-header"><h2>Z-REPORT</h2><p>Cashier: ${cashier}</p><p>Date: ${date}</p><p>Transactions: ${sales.length}</p></div>
+      <div class="z-report-header"><h2>Z-REPORT</h2><p>Cashier: ${cashier}</p><p>Date: ${date}</p><p>Transactions: ${sales.length}</p><p>Currency: ${currentCurrency}</p></div>
       <div class="z-report-stats">${statsHtml}</div>
       <h4>Products Sold</h4>
       <table class="sales-table"><thead><tr><th>Product</th><th>Qty</th>${isAdmin ? '<th>Sales</th>' : ''}</tr></thead>
-      <tbody>${Array.from(productMap.values()).map(p => `<tr><td>${escapeHtml(p.name)}</td><td>${p.quantity.toFixed(2)}</td>${isAdmin ? `<td>$${p.sales.toFixed(2)}</td>` : ''}</tr>`).join('')}</tbody>
+      <tbody>${Array.from(productMap.values()).map(p => {
+        const displaySales = getDisplayPrice(p.salesUSD);
+        return `<tr><td>${escapeHtml(p.name)}</td><td>${p.quantity.toFixed(2)}</td>${isAdmin ? `<td>${getCurrencySymbol()}${displaySales.toFixed(2)}</td>` : ''}</tr>`;
+      }).join('')}</tbody>
       </table>
       <div style="margin-top:1rem;text-align:center;">Generated: ${new Date().toLocaleString()}</div>
+      ${currentCurrency === 'ZWG' ? `<div style="margin-top:0.5rem;text-align:center;font-size:10px;">Rate: 1 USD = ${ZWG_RATE} ZWG</div>` : ''}
     `;
     document.getElementById("zReportContent").style.display = "block";
   }
@@ -2012,7 +2228,7 @@
     let detailHtml = `
       <p><strong>Date:</strong> ${c.date} ${c.time}</p>
       ${isAdmin ? `<p><strong>Cashier:</strong> ${c.cashier}</p>` : ''}
-      <p><strong>Expected:</strong> $${(c.expected||0).toFixed(2)}</p>
+      <p><strong>Expected (USD):</strong> $${(c.expected||0).toFixed(2)}</p>
       <p><strong>Cash at Hand:</strong> $${(c.cashAtHand||0).toFixed(2)}</p>
       <p><strong>Bank:</strong> $${(c.bank||0).toFixed(2)}</p>
       <p><strong>Declared:</strong> $${(c.totalDeclared||0).toFixed(2)}</p>
@@ -2061,9 +2277,22 @@
       location.reload(); 
     };
     
+    setupBarcodeScanner();
     loadProductsFromAPI(); 
     loadSummary(); 
     startBackgroundSync();
+    
+    // Add currency toggle button to header
+    const userInfoDiv = document.querySelector('.user-info');
+    const currencyBtn = document.createElement('button');
+    currencyBtn.id = 'currencyToggle';
+    currencyBtn.className = 'cashup-btn';
+    currencyBtn.innerHTML = '<i class="fas fa-dollar-sign"></i> USD';
+    currencyBtn.onclick = () => {
+      switchCurrency();
+      currencyBtn.innerHTML = currentCurrency === 'USD' ? '<i class="fas fa-dollar-sign"></i> USD' : '<i class="fas fa-money-bill"></i> ZWG';
+    };
+    userInfoDiv.insertBefore(currencyBtn, document.getElementById('cashupBtn'));
   }
 
   async function attemptLogin(username, password) {
@@ -2173,6 +2402,5 @@
   window.cashKeypadEnter = cashKeypadEnter;
   window.confirmCashPayment = confirmCashPayment;
 </script>
-
 </body>
 </html>
