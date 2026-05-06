@@ -1538,7 +1538,7 @@
               <span class="quantity-display">${item.quantity.toFixed(item.item_type === 'each' ? 0 : 3)}</span>
               <button class="quantity-btn" onclick="updateQuantity(${i}, ${item.quantity + (item.item_type === 'each' ? 1 : 0.1)})">+</button>
             </div>
-            <span class="price-edit" onclick="editPrice(${i})">${formatPrice(item.price)}</span>
+            <span class="price-display">${formatPrice(item.price)}</span>
             <button class="delete-btn" onclick="removeFromCart(${i})"><i class="fas fa-trash"></i></button>
           </div>
         </div>
@@ -1558,7 +1558,6 @@
   }
 
   function removeFromCart(index) { cart.splice(index, 1); renderCart(); }
-  function editPrice(index) { const np = prompt("Enter new price (USD):", cart[index].price); if (np && !isNaN(np) && parseFloat(np) > 0) { cart[index].price = parseFloat(np); renderCart(); } }
 
   // ============================================================================
   // CUSTOMER FUNCTIONS
@@ -2367,7 +2366,6 @@
   window.completeSale = completeSale;
   window.updateQuantity = updateQuantity;
   window.removeFromCart = removeFromCart;
-  window.editPrice = editPrice;
   window.showCustomerList = showCustomerList;
   window.searchCustomer = searchCustomer;
   window.selectCustomer = selectCustomer;
